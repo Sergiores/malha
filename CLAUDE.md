@@ -130,8 +130,8 @@ src/middleware.ts             sessão (não autorização)
 | Fase | Escopo | Status |
 |------|--------|--------|
 | 0 | Fundação: andaime, Supabase, deploy | ✅ Concluída (deploy pendente) |
-| 1 | Autenticação e Conta | Planejada |
-| 2 | Schema + registry + seed do superadmin | Planejada |
+| 1 | Autenticação e Conta | ✅ Concluída |
+| 2 | Schema + registry + seed do superadmin | Planejada (seed já feito) |
 | 3 | Organizações, membros, papéis | Planejada |
 | 4 | Painel do superadmin (contas, licenças, módulos) | Planejada |
 | 5 | `requireModulo()` + navegação por licença | Planejada |
@@ -147,6 +147,28 @@ src/middleware.ts             sessão (não autorização)
 - `prisma/seed.ts` e `prisma/sync-modulos.ts` como stubs
 - **Conexão com o Supabase validada** — `DATABASE_URL` e `DIRECT_URL` conectam
 - **Pendente:** deploy na Vercel + subdomínio (pode esperar a Fase 1)
+
+### Fase 1 — decisões
+
+- **`Conta.trocarSenha`**: quando `true`, `requireConta()` manda para
+  `/redefinir-senha` e nada mais da área logada abre. O seed cria o
+  superadmin com essa flag ligada; `redefinirSenha()` a desliga.
+- **Mensagens que não vazam cadastro**: login errado devolve sempre
+  "E-mail ou senha incorretos"; recuperação de senha responde "se o e-mail
+  existir…" mesmo quando não existe.
+- **`/auth/callback` valida o `next`**: só aceita caminho interno começando
+  com `/` e não `//`. Sem isso o link do e-mail viraria redirect aberto.
+- **Guard no layout `(app)`**: toda rota criada sob esse grupo já nasce
+  protegida; as pages repetem `requireConta()` e o `cache()` do React faz as
+  chamadas virarem uma consulta só.
+- A troca de senha usa o fluxo de e-mail do Supabase (não há formulário de
+  "senha atual + nova"). Simples e sem manipular hash.
+
+### Fase 1 — validado no navegador
+
+`/app` sem sessão → login · login do superadmin → `/redefinir-senha` (flag
+`trocarSenha`) · login comum → `/app` · edição de perfil grava · logout
+volta ao login · conta inativada → login recusado com aviso.
 
 ### Dados do projeto Supabase (confirmados por teste)
 

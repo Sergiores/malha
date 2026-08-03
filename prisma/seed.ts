@@ -1,22 +1,103 @@
 /**
- * Seed do banco.
+ * Seed do banco. Idempotente — pode rodar quantas vezes quiser.
  *
- * Roda automaticamente ao final de `prisma migrate dev` (via o bloco
- * "prisma".seed do package.json) e manualmente por `npm run db:seed`.
+ * Roda automaticamente ao final de `prisma migrate dev` (bloco "prisma".seed
+ * do package.json) e manualmente por `npm run db:seed`.
  *
- * Fase 0: não há modelos ainda — este arquivo existe para que a primeira
- * migration não falhe procurando um seed inexistente.
+ * Cria o superadmin a partir de SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD.
+ * A senha vai direto para o Supabase Auth (que guarda o hash) e a Conta
+ * nasce com `trocarSenha = true`.
  *
- * Fase 2 passa a: criar o superadmin (SUPERADMIN_EMAIL/SUPERADMIN_PASSWORD
- * via Supabase Admin API) e chamar sincronizarModulos().
+ * Fase 2 acrescenta aqui a chamada a sincronizarModulos().
  */
+import { PrismaClient } from "@prisma/client";
+import { createClient } from "@supabase/supabase-js";
+
+const prisma = new PrismaClient();
+
+function supabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error(
+      "Defina NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no .env."
+    );
+  }
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
+async function semearSuperadmin() {
+  const email = process.env.SUPERADMIN_EMAIL?.trim().toLowerCase();
+  const senha = process.env.SUPERADMIN_PASSWORD;
+
+  if (!email) {
+    console.log("SUPERADMIN_EMAIL não definido — pulando superadmin.");
+    return;
+  }
+
+  const admin = supabaseAdmin();
+
+  // listUsers é paginado; procuramos o e-mail nas primeiras páginas.
+  let authUserId: string | undefined;
+  for (let page = 1; page <= 10 && !authUserId; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage: 1000,
+    });
+    if (error) throw new Error(`Supabase listUsers: ${error.message}`);
+    if (!data.users.length) break;
+    authUserId = data.users.find(
+      (u) => u.email?.toLowerCase() === email
+    )?.id;
+  }
+
+  if (!authUserId) {
+    if (!senha) {
+      throw new Error(
+        "Superadmin ainda não existe e SUPERADMIN_PASSWORD está vazio."
+      );
+    }
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password: senha,
+      email_confirm: true, // criado pelo dono do sistema; não precisa confirmar
+      user_metadata: { nome: "Superadmin" },
+    });
+    if (error) throw new Error(`Supabase createUser: ${error.message}`);
+    authUserId = data.user.id;
+    console.log(`Superadmin criado no Auth: ${email}`);
+  } else {
+    console.log(`Superadmin já existe no Auth: ${email}`);
+  }
+
+  const conta = await prisma.conta.upsert({
+    where: { authUserId },
+    update: { email, ativa: true },
+    // trocarSenha só na criação: não force de novo a cada seed.
+    create: {
+      authUserId,
+      email,
+      nome: "Superadmin",
+      ativa: true,
+      trocarSenha: true,
+    },
+  });
+  console.log(`Conta do superadmin: id=${conta.id}`);
+}
+
 export async function main() {
-  console.log("Seed: nada a semear ainda (modelos entram na Fase 2).");
+  await semearSuperadmin();
 }
 
 main()
-  .then(() => process.exit(0))
-  .catch((e) => {
+  .then(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  })
+  .catch(async (e) => {
     console.error(e);
+    await prisma.$disconnect();
     process.exit(1);
   });

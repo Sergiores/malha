@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { Ruler } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
@@ -7,13 +9,20 @@ export default function Home() {
         <Ruler className="h-8 w-8 text-primary" />
         <h1 className="text-3xl font-bold tracking-tight">Malha</h1>
       </div>
-      <p className="max-w-2xl text-lg text-muted-foreground">
+      <p className="mb-8 max-w-2xl text-lg text-muted-foreground">
         Plataforma de cálculo, verificação normativa e memorial técnico para
         engenharia estrutural.
       </p>
-      <p className="mt-8 rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-        Fase 0 — fundação. Autenticação e módulos entram nas fases seguintes.
-      </p>
+      <div className="flex flex-wrap gap-3">
+        <Link href="/cadastro">
+          <Button size="lg">Criar conta</Button>
+        </Link>
+        <Link href="/login">
+          <Button size="lg" variant="outline">
+            Entrar
+          </Button>
+        </Link>
+      </div>
     </main>
   );
 }

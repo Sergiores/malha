@@ -1,14 +1,13 @@
 // Malha — schema de dados
 //
-// Fase 0: apenas datasource/generator, para validar a conexão com o Supabase.
-// Os modelos (Conta, Organizacao, Modulo, Calculadora, OrganizacaoModulo,
-// LogAuditoria) entram na Fase 2.
-//
 // Convenções do projeto:
 //  - PKs Int com autoincrement (evita a conversão manual que BigInt exige
 //    ao serializar para JSON).
 //  - createdAt/updatedAt em todas as tabelas.
 //  - Índices em todas as FKs.
+//
+// Fase 1: modelo Conta. Organizacao, Modulo, Calculadora,
+// OrganizacaoModulo e LogAuditoria entram na Fase 2.
 
 generator client {
   provider = "prisma-client-js"
@@ -18,4 +17,30 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
+
+// ------------------------------------------------------------------
+// Conta — perfil do usuário
+// ------------------------------------------------------------------
+// A senha NÃO vive aqui: quem guarda hash e sessão é o Supabase Auth.
+// `authUserId` é a ponte para `auth.users.id`.
+model Conta {
+  id         Int     @id @default(autoincrement())
+  authUserId String? @unique @map("auth_user_id") @db.Uuid
+  email      String? @unique
+  nome       String?
+  telefone   String?
+
+  // Inativação por superadmin — quando false, o login é bloqueado em
+  // requireConta(). Não apagamos contas com histórico.
+  ativa Boolean @default(true)
+
+  // Força a troca de senha no próximo acesso. Usado para a senha inicial
+  // do superadmin, criada pelo seed.
+  trocarSenha Boolean @default(false) @map("trocar_senha")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("conta")
 }
