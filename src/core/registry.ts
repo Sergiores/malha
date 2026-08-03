@@ -47,7 +47,14 @@ export const MODULOS: ModuloDef[] = [
     nome: "Concreto Fresco/Endurecido",
     descricao:
       "Dosagem, controle tecnológico e propriedades do concreto nos estados fresco e endurecido.",
-    calculadoras: [],
+    calculadoras: [
+      {
+        slug: "dosagem-caa",
+        nome: "Dosagem de CAA",
+        descricao:
+          "Concreto autoadensável pelo método Tutikian: traço unitário, consumo por m³ e composição de custo.",
+      },
+    ],
   },
 ];
 

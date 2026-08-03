@@ -2,8 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CircleSlash, Lock, TimerOff } from "lucide-react";
+import {
+  CircleSlash,
+  FileText,
+  LayoutDashboard,
+  Lock,
+  TimerOff,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const GERAL = [
+  { href: "/dashboard", rotulo: "Dashboard", Icone: LayoutDashboard },
+  { href: "/analises", rotulo: "Análises", Icone: FileText },
+];
 
 export type ItemMenu = {
   slug: string;
@@ -23,7 +34,26 @@ export function MenuModulos({ itens }: { itens: ItemMenu[] }) {
 
   return (
     <nav className="space-y-1">
-      <p className="px-3 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      {GERAL.map(({ href, rotulo, Icone }) => {
+        const ativo = pathname === href || pathname.startsWith(`${href}/`);
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+              ativo
+                ? "bg-primary/10 font-medium text-primary"
+                : "hover:bg-accent"
+            )}
+          >
+            <Icone className="h-4 w-4 shrink-0" />
+            {rotulo}
+          </Link>
+        );
+      })}
+
+      <p className="px-3 pb-2 pt-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Módulos
       </p>
 

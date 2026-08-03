@@ -155,7 +155,7 @@ src/middleware.ts             sessão (não autorização)
 | 4 | Painel do superadmin (contas, licenças, módulos) | ✅ Concluída |
 | 5 | `requireModulo()` + navegação por licença | ✅ Concluída |
 | — | Deploy em produção | ✅ No ar |
-| 6 | Calculadoras a partir das planilhas | Planejada |
+| 6 | Calculadoras a partir das planilhas | 🔄 Dosagem CAA pronta |
 
 ### Fase 0 — o que já está pronto
 
@@ -311,6 +311,45 @@ que sobrou:
 
 `Organizacao.codigoConvite` continua no schema, preenchido automaticamente.
 Volta a ter uso quando o multiusuário chegar.
+
+### Calculadoras — como adicionar
+
+Cada calculadora vive em `src/core/calculators/<slug>/`:
+
+- `schema.ts` — Zod das entradas, faixas de validade e valores padrão
+- `calc.ts` — **função pura**: sem I/O, sem data, sem banco. É o que torna o
+  resultado reproduzível e testável.
+- `verificar.ts` — paridade com a planilha de origem
+
+Depois: registrar em `src/core/registry.ts` (dentro do módulo certo), rodar
+`npm run db:sync-modulos`, e criar a rota em
+`src/app/(app)/m/[slug]/<calc-slug>/`.
+
+**`npm run verificar:calculos` é o critério de aceite.** Se os números
+mudarem, o motor divergiu da planilha que o engenheiro já valida na prática
+— isso precisa ser decisão, não acidente.
+
+### Dosagem CAA — decisões
+
+- **Resultado recalculado no servidor ao salvar**, nunca aceito do
+  formulário. Senão daria para forjar um laudo com números que a fórmula não
+  produz.
+- **Snapshot em `Analise.resultados`**: o laudo mostra o que foi gravado, não
+  um recálculo. Um laudo de março tem de exibir os mesmos números em
+  dezembro, mesmo que preços ou fórmula mudem.
+- **Preços são entradas**, não constantes na fórmula — era o defeito da
+  planilha original e o que fazia o custo envelhecer sozinho.
+- **Avisos em vez de bloqueio** para valores fora da faixa usual; erro só
+  quando a matemática deixa de ter sentido físico (ex.: massa específica que
+  não cobre cimento + água).
+- Custo do caso de referência dá **R$ 405,03** contra R$ 405,06 da planilha:
+  3 centavos de diferença por arredondamento dos preços unitários. Dentro da
+  tolerância do teste.
+- **Gráficos em SVG puro**, sem lib de charting: economiza dezenas de kB num
+  app que o engenheiro abre no canteiro, e SVG imprime bem no laudo — canvas
+  não.
+- **Laudo em PDF pela impressão do navegador** (`@media print` em
+  `globals.css`), sem biblioteca de geração no servidor.
 
 ### Módulos ativos
 

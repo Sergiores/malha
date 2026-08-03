@@ -10,7 +10,7 @@
 // `Calculadora` é o que se EXECUTA dentro dele.
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   // Faz o Prisma resolver `include` com LATERAL JOIN em vez de uma query por
   // relação. Com o banco em sa-east-1 e as funções fora da região, cada
   // round-trip custa ~150 ms — juntar as queries é a otimização mais barata
@@ -20,7 +20,7 @@ generator client {
   // Netlify (Amazon Linux + OpenSSL 3). Sem o segundo, o PrismaClient lança
   // na importação e TODA server action devolve 500 — inclusive as que nem
   // tocam o banco, porque o módulo importa o client no topo.
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -54,6 +54,7 @@ model Conta {
 
   organizacoes OrganizacaoMembro[]
   logs         LogAuditoria[]
+  analises     Analise[]
 
   @@map("conta")
 }
@@ -79,8 +80,9 @@ model Organizacao {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  membros OrganizacaoMembro[]
-  modulos OrganizacaoModulo[]
+  membros  OrganizacaoMembro[]
+  modulos  OrganizacaoModulo[]
+  analises Analise[]
 
   @@map("organizacao")
 }
@@ -151,10 +153,54 @@ model Calculadora {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  modulo Modulo @relation(fields: [idModulo], references: [id], onDelete: Cascade)
+  modulo   Modulo    @relation(fields: [idModulo], references: [id], onDelete: Cascade)
+  analises Analise[]
 
   @@index([idModulo])
   @@map("calculadora")
+}
+
+// ------------------------------------------------------------------
+// Analise — um cálculo executado e guardado
+// ------------------------------------------------------------------
+// Entradas e resultados vão em Json de propósito: cada calculadora tem o
+// seu formato, e engessar isso em colunas obrigaria a migrar o banco a cada
+// calculadora nova. O contrato de cada Json vive no `schema.ts` do módulo
+// correspondente em src/core/calculators/.
+//
+// O snapshot dos resultados é gravado junto: um laudo emitido em março tem
+// de continuar mostrando os mesmos números em dezembro, mesmo que os preços
+// de insumo ou a própria fórmula mudem no meio.
+model Analise {
+  id            Int @id @default(autoincrement())
+  idOrganizacao Int @map("id_organizacao")
+  idConta       Int @map("id_conta")
+  idCalculadora Int @map("id_calculadora")
+
+  titulo     String
+  status     StatusAnalise @default(RASCUNHO)
+  entradas   Json
+  resultados Json
+  observacao String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organizacao Organizacao @relation(fields: [idOrganizacao], references: [id], onDelete: Cascade)
+  conta       Conta       @relation(fields: [idConta], references: [id], onDelete: Cascade)
+  calculadora Calculadora @relation(fields: [idCalculadora], references: [id], onDelete: Restrict)
+
+  @@index([idOrganizacao, createdAt])
+  @@index([idConta])
+  @@index([idCalculadora])
+  @@map("analise")
+}
+
+enum StatusAnalise {
+  RASCUNHO
+  CONCLUIDA
+  APROVADA
+  ARQUIVADA
 }
 
 // ------------------------------------------------------------------

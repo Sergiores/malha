@@ -53,3 +53,35 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Impressão do laudo: o navegador salva em PDF sem precisarmos de uma
+   biblioteca de geração no servidor. Some tudo que é navegação e força
+   fundo branco — impressora não imprime tema escuro de graça. */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  header,
+  aside,
+  nav,
+  form {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Não parte um cartão de resultado no meio de duas páginas. */
+  table,
+  svg {
+    break-inside: avoid;
+  }
+}
