@@ -24,7 +24,19 @@ Material de origem em `docs/`:
 - **Supabase Auth** — autenticação (e-mail/senha)
 - **Tailwind CSS 3 + shadcn/ui** (estilo "new-york", base neutral)
 - **Zod** — validação
-- **Vercel** — deploy, região `gru1`
+- **Netlify** — deploy (runtime OpenNext, instalado automaticamente)
+
+> `vercel.json` continua no repo: a Vercel era o plano original e o acesso à
+> conta ficou travado no 2FA. Se um dia voltar, o projeto sobe lá também sem
+> mudança nenhuma.
+>
+> **Cloudflare Workers foi avaliado e descartado**: exigiria trocar
+> `PrismaClient` por `@prisma/adapter-pg` e provavelmente provisionar um
+> Hyperdrive, porque Workers não tem runtime Node completo. Some-se a isso o
+> conflito entre `?pgbouncer=true` (parâmetro do motor do Prisma, ignorado
+> pelo driver `pg`) e o pooler do Supabase em modo transaction, que não
+> aceita prepared statements. Netlify e Vercel rodam Node, então o Prisma
+> funciona igual ao ambiente local.
 
 > A stack foi copiada do projeto **Bolicho** (`D:\Projetos\Bolicho\Bolicho`),
 > que já roda em produção. Quando estiver em dúvida sobre um padrão, olhe lá

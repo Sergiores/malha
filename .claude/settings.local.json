@@ -13,7 +13,9 @@
       "PowerShell(Set-Location \"D:\\\\Projetos\\\\PersonalMalha\"; $senhas = @\\(\"Innerdil11%40%21\",\"Innerdil11%40!\",\"Innerdil11%21%40\",\"InnerDil11%40%21\"\\); foreach \\($s in $senhas\\) { $env:DIRECT_URL = \"postgresql://postgres.btcighnzuaomovgpehru:$s@aws-0-sa-east-1.pooler.supabase.com:5432/postgres\"; $out = npx prisma db pull 2>&1 | Out-String; $r = if \\($out -match \"P1000\"\\) { \"AUTH FALHOU\" } elseif \\($out -match \"P1013\"\\) { \"URL INVALIDA\" } else { \"OUTRO: \" + \\(\\($out.Trim\\(\\) -split \"`n\" | Select-Object -Last 1\\)\\) }; \"$s -> $r\" })",
       "PowerShell(Set-Location \"D:\\\\Projetos\\\\PersonalMalha\"; Remove-Item \"testa-conexao.mjs\" -Force; npm uninstall pg --no-save 2>&1 | Select-Object -Last 1; Get-Process node -ErrorAction SilentlyContinue | Select-Object Id, StartTime, @{n='Cmd';e={\\(Get-CimInstance Win32_Process -Filter \"ProcessId=$\\($_.Id\\)\"\\).CommandLine.Substring\\(0,[Math]::Min\\(90,\\(Get-CimInstance Win32_Process -Filter \"ProcessId=$\\($_.Id\\)\"\\).CommandLine.Length\\)\\)}} | Format-Table -AutoSize)",
       "PowerShell(Stop-Process -Id 8340,8772,9320,14500 -Force -ErrorAction SilentlyContinue)",
-      "PowerShell(Get-Process node -ErrorAction SilentlyContinue)"
+      "PowerShell(Get-Process node -ErrorAction SilentlyContinue)",
+      "Bash(cd \"C:/Users/Sérgio/.claude/skills/cloudflare/references/hyperdrive\" && grep -n -i -A 12 \"prisma\" patterns.md gotchas.md 2>/dev/null | head -60)",
+      "WebFetch(domain:www.prisma.io)"
     ]
   }
 }

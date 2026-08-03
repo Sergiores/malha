@@ -1,0 +1,15 @@
+# Deploy na Netlify.
+#
+# O runtime de Next.js (OpenNext) é instalado automaticamente pela própria
+# Netlify — não fixe a versão do adapter, ela o atualiza a cada build.
+#
+# O build command precisa do `prisma generate` antes do `next build`, o que
+# o script `build` do package.json já faz.
+
+[build]
+  command = "npm run build"
+
+[build.environment]
+  # Fixa o Node para o build não mudar de comportamento quando a Netlify
+  # trocar o default.
+  NODE_VERSION = "22"
