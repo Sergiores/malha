@@ -1,10 +1,10 @@
+import { cache } from "react";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireMembroOrg } from "@/lib/organizacao";
 
 /**
- * Situação de uma licença de módulo para uma organização.
- *
- * O gate propriamente dito — `requireModulo()` — entra na Fase 5. Aqui fica
- * só a leitura, usada pelo painel para mostrar o que está vigente.
+ * Leitura da situação das licenças e o gate comercial `requireModulo()`.
  */
 export type SituacaoLicenca = "vigente" | "vencida" | "revogada" | "sem_licenca";
 
@@ -71,3 +71,39 @@ export async function modulosDaOrganizacao(
     };
   });
 }
+
+/**
+ * O GATE COMERCIAL.
+ *
+ * Exige que a organização tenha licença vigente do módulo. Deve ser chamado
+ * no layout do módulo, em cada page e no topo de toda server action que
+ * execute algo dentro dele — esconder o link do menu não é controle de
+ * acesso, e é por aqui que passa a receita do produto.
+ *
+ * Falhas se comportam de dois jeitos distintos, de propósito:
+ *  - módulo inexistente ou desativado -> `notFound()`, porque não há o que
+ *    contratar;
+ *  - licença ausente, vencida ou revogada -> `/sem-acesso`, que explica o
+ *    motivo e diz o que fazer. É cliente legítimo batendo numa porta
+ *    fechada, não invasor.
+ */
+export const requireModulo = cache(async function requireModulo(
+  idOrg: number,
+  slug: string
+) {
+  const ctx = await requireMembroOrg(idOrg);
+
+  const modulo = await prisma.modulo.findUnique({
+    where: { slug },
+    include: { organizacoes: { where: { idOrganizacao: idOrg } } },
+  });
+
+  if (!modulo || !modulo.ativo) notFound();
+
+  const situacao = situacaoDaLicenca(modulo.organizacoes[0]);
+  if (situacao !== "vigente") {
+    redirect(`/o/${idOrg}/sem-acesso?modulo=${slug}&motivo=${situacao}`);
+  }
+
+  return { ...ctx, modulo, licenca: modulo.organizacoes[0] };
+});

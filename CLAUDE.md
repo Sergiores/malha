@@ -134,7 +134,7 @@ src/middleware.ts             sessão (não autorização)
 | 2 | Schema + registry + seed do superadmin | ✅ Concluída |
 | 3 | Organizações, membros, papéis | ✅ Concluída |
 | 4 | Painel do superadmin (contas, licenças, módulos) | ✅ Concluída |
-| 5 | `requireModulo()` + navegação por licença | Planejada |
+| 5 | `requireModulo()` + navegação por licença | ✅ Concluída |
 | 6 | Calculadoras a partir das planilhas | Planejada |
 
 ### Fase 0 — o que já está pronto
@@ -246,6 +246,35 @@ auditoria registra tudo com autor e detalhes.
 (o Supabase recusa redefinir para a mesma senha). A senha inicial continua
 valendo. Para voltar a exigir a troca:
 `UPDATE conta SET trocar_senha = true WHERE email = '<superadmin>';`
+
+### Fase 5 — decisões
+
+- **`requireModulo(idOrg, slug)`** em `src/lib/modulo.ts` é o gate comercial.
+  Chamado no `layout.tsx` da rota do módulo, então **toda calculadora futura
+  já nasce protegida** sem ninguém precisar lembrar.
+- **Duas falhas, dois comportamentos**, de propósito:
+  - módulo inexistente ou desativado → `notFound()`, porque não há o que
+    contratar;
+  - licença ausente, vencida ou revogada → `/o/[idOrg]/sem-acesso` com o
+    motivo. É cliente legítimo numa porta fechada, não invasor — merece
+    saber o que houve e o que fazer.
+- **`sem-acesso` lê o nome do módulo do banco**, não da query string: o
+  parâmetro vem do usuário e seria refletido na tela.
+- **Card só vira link quando vigente** — mas isso é conveniência. Quem digitar
+  a URL do módulo bloqueado esbarra em `requireModulo()` do mesmo jeito.
+
+### Fase 5 — validado no navegador
+
+| Situação | Resultado |
+|---|---|
+| Licença vigente | abre o módulo |
+| Vencida | `/sem-acesso?motivo=vencida`, com a data de encerramento |
+| Sem licença | `/sem-acesso?motivo=sem_licenca` |
+| Revogada | `/sem-acesso?motivo=revogada` — corte imediato |
+| Slug inexistente | 404 |
+| Não-membro (inclusive o superadmin) | 404 em todas as rotas de `/o/3` |
+
+Reativar a licença devolve o acesso e o card volta a ser link.
 
 ### Módulos ativos
 

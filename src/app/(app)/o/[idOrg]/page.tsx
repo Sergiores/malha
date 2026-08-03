@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CircleSlash, Lock, PackageCheck, TimerOff } from "lucide-react";
 import { requireMembroOrg, parseIdOrg } from "@/lib/organizacao";
 import { modulosDaOrganizacao, type SituacaoLicenca } from "@/lib/modulo";
@@ -59,8 +60,16 @@ export default async function OrganizacaoPage({
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {modulos.map((m) => {
           const s = SITUACAO[m.situacao];
-          return (
-            <Card key={m.id} className={m.situacao === "vigente" ? "" : "opacity-70"}>
+          const liberado = m.situacao === "vigente";
+
+          const cartao = (
+            <Card
+              className={
+                liberado
+                  ? "h-full transition-colors hover:border-primary"
+                  : "h-full opacity-70"
+              }
+            >
               <CardHeader>
                 <div className="mb-2">
                   <span
@@ -84,6 +93,17 @@ export default async function OrganizacaoPage({
                 )}
               </CardContent>
             </Card>
+          );
+
+          // Só o módulo liberado vira link. Quem digitar a URL do bloqueado
+          // ainda esbarra em requireModulo() — isto é conveniência, não
+          // controle de acesso.
+          return liberado ? (
+            <Link key={m.id} href={`/o/${id}/m/${m.slug}`}>
+              {cartao}
+            </Link>
+          ) : (
+            <div key={m.id}>{cartao}</div>
           );
         })}
       </div>
