@@ -10,6 +10,13 @@ import { SubmitButton } from "@/components/submit-button";
 import { AuthMessage } from "@/components/auth-message";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+/** `YYYY-MM-DD` -> `DD/MM/AAAA`, sem passar por Date (evita fuso). */
+function dataPtBr(iso: string): string {
+  if (!iso) return "—";
+  const [a, m, d] = iso.split("-");
+  return `${d}/${m}/${a}`;
+}
+
 export type LicencaRow = {
   idModulo: number;
   nome: string;
@@ -55,6 +62,27 @@ export function LicencaForm({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* Estado GRAVADO, independente do que está nos campos. Sem isto, um
+            campo de data incompleto (que o navegador devolve vazio) grava
+            "sem prazo" e parece que o prazo foi ignorado. */}
+        <p className="rounded-md bg-muted px-3 py-2 text-sm">
+          {licenca.temLicenca ? (
+            <>
+              <span className="text-muted-foreground">Gravado: </span>
+              {dataPtBr(licenca.validoDe)}
+              {licenca.validoAte ? (
+                <> até <strong>{dataPtBr(licenca.validoAte)}</strong></>
+              ) : (
+                <> · <strong>sem prazo</strong></>
+              )}
+            </>
+          ) : (
+            <span className="text-muted-foreground">
+              Nenhuma licença gravada para este módulo.
+            </span>
+          )}
+        </p>
+
         <form action={acSalvar} className="space-y-3">
           <input type="hidden" name="idOrganizacao" value={idOrganizacao} />
           <input type="hidden" name="idModulo" value={licenca.idModulo} />

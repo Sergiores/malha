@@ -83,10 +83,15 @@ export async function salvarLicenca(
   });
 
   revalidatePath(`/superadmin/organizacoes/${idOrganizacao}/modulos`);
-  revalidatePath(`/o/${idOrganizacao}`);
-  return {
-    success: `${modulo.nome} liberado até ${validoAte || "sem prazo"}.`,
-  };
+  revalidatePath("/app");
+  revalidatePath("/dashboard");
+
+  // Explicita quando NÃO há prazo. Um campo de data incompleto chega aqui
+  // vazio — sem essa distinção, o superadmin acharia que gravou o prazo.
+  const ate = validoAte
+    ? `até ${validoAte.split("-").reverse().join("/")}`
+    : "SEM PRAZO — o campo “Válido até” ficou vazio";
+  return { success: `${modulo.nome} liberado ${ate}.` };
 }
 
 /**
