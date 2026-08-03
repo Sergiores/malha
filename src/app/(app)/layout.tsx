@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Ruler, UserRound } from "lucide-react";
+import { Ruler, Shield, UserRound } from "lucide-react";
 import { requireConta } from "@/lib/auth";
+import { isSuperadmin } from "@/lib/superadmin";
 import { sair } from "@/app/(auth)/actions";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +12,7 @@ export default async function AppLayout({
 }) {
   // Guard no layout: toda rota nova sob (app) já nasce protegida.
   const { conta } = await requireConta();
+  const ehSuper = isSuperadmin(conta.email);
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -24,6 +26,14 @@ export default async function AppLayout({
             <span className="hidden text-xs text-muted-foreground sm:inline">
               {conta.nome ?? conta.email}
             </span>
+            {ehSuper && (
+              <Link href="/superadmin/contas">
+                <Button variant="ghost" size="sm">
+                  <Shield className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <span className="hidden sm:inline">Superadmin</span>
+                </Button>
+              </Link>
+            )}
             <Link href="/perfil">
               <Button variant="ghost" size="sm">
                 <UserRound className="h-4 w-4" />

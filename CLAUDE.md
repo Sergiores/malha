@@ -133,7 +133,7 @@ src/middleware.ts             sessão (não autorização)
 | 1 | Autenticação e Conta | ✅ Concluída |
 | 2 | Schema + registry + seed do superadmin | ✅ Concluída |
 | 3 | Organizações, membros, papéis | ✅ Concluída |
-| 4 | Painel do superadmin (contas, licenças, módulos) | Planejada |
+| 4 | Painel do superadmin (contas, licenças, módulos) | ✅ Concluída |
 | 5 | `requireModulo()` + navegação por licença | Planejada |
 | 6 | Calculadoras a partir das planilhas | Planejada |
 
@@ -211,6 +211,41 @@ contratado" · Bruno (não membro) recebe **404** em `/o/1`, não 403 · Bruno
 entra com o código digitado em minúsculas e vira Membro · membro comum não
 vê código nem botões · rebaixar o último admin é recusado · Ana promove
 Bruno e então consegue se rebaixar.
+
+### Fase 4 — decisões
+
+- **`requireSuperadmin()` também checa `ativa` e `trocarSenha`.** O painel que
+  controla o licenciamento de todos os clientes é o último lugar para abrir
+  exceção à regra da área logada.
+- **Conceder é upsert** sobre `(organizacao, modulo)`: conceder de novo é
+  renovar, e reativa licença revogada — o que se espera quando o cliente
+  volta a pagar.
+- **Revogar não apaga**: `ativo = false` preserva datas e observação. Apagar
+  esconderia que o cliente já teve acesso.
+- **Trocar senha de terceiro liga `trocarSenha`** na conta alvo: quem definiu
+  a senha não deve continuar sabendo a senha de quem usa.
+- **Superadmin não se inativa** — seria irreversível pela interface.
+- **Datas em UTC puro.** As colunas são `@db.Date` e o `<input type="date">`
+  manda `YYYY-MM-DD`; `dataUtc()`/`isoDeData()` em
+  `src/lib/validations/superadmin.ts` evitam o dia escorregar por fuso.
+- **`registrar()` nunca derruba a operação principal** — perder uma linha de
+  auditoria é ruim, abortar uma concessão já gravada é pior.
+- `LogAuditoria.idConta` é `onDelete: SetNull`: o log sobrevive à exclusão da
+  conta e passa a exibir "sistema". Verificado.
+
+### Fase 4 — validado no navegador
+
+Conta comum recebe **404 nas seis rotas** do painel (verificado por fetch, não
+só na primeira) · superadmin com `trocarSenha` pendente é barrado até trocar ·
+criar organização já vinculando o admin por e-mail · conceder Estrutura
+Metálica com prazo → cliente vê "Liberado" com a vigência certa · data final
+anterior à inicial é recusada · recuar as datas → cliente vê "Vencido" ·
+auditoria registra tudo com autor e detalhes.
+
+⚠️ **A flag `trocarSenha` do superadmin está desligada** desde a validação
+(o Supabase recusa redefinir para a mesma senha). A senha inicial continua
+valendo. Para voltar a exigir a troca:
+`UPDATE conta SET trocar_senha = true WHERE email = '<superadmin>';`
 
 ### Módulos ativos
 
