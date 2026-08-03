@@ -11,6 +11,11 @@
 
 generator client {
   provider = "prisma-client-js"
+  // "native" para o Windows local; "rhel-openssl-3.0.x" para as funções da
+  // Netlify (Amazon Linux + OpenSSL 3). Sem o segundo, o PrismaClient lança
+  // na importação e TODA server action devolve 500 — inclusive as que nem
+  // tocam o banco, porque o módulo importa o client no topo.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {

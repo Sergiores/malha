@@ -15,7 +15,8 @@
       "PowerShell(Stop-Process -Id 8340,8772,9320,14500 -Force -ErrorAction SilentlyContinue)",
       "PowerShell(Get-Process node -ErrorAction SilentlyContinue)",
       "Bash(cd \"C:/Users/Sérgio/.claude/skills/cloudflare/references/hyperdrive\" && grep -n -i -A 12 \"prisma\" patterns.md gotchas.md 2>/dev/null | head -60)",
-      "WebFetch(domain:www.prisma.io)"
+      "WebFetch(domain:www.prisma.io)",
+      "WebSearch"
     ]
   }
 }
