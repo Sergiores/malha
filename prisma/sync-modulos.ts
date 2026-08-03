@@ -1,22 +1,35 @@
 /**
- * Sincroniza o registry de módulos (`src/core/registry.ts`) com as tabelas
- * `Modulo` e `Calculadora`, para que todo módulo novo apareça sozinho na
- * gestão do superadmin.
+ * Sincroniza o registry (`src/core/registry.ts`) com as tabelas `modulo` e
+ * `calculadora`, para que todo módulo novo apareça sozinho na gestão do
+ * superadmin.
  *
- * Regra: **nunca apaga**. Módulo que sai do registry é marcado
- * `ativo = false`, preservando as licenças históricas que apontam para ele.
+ * Uso: `npm run db:sync-modulos`
  *
- * Fase 0: stub. A implementação entra na Fase 2, junto com o schema.
+ * Import relativo de propósito: o alias `@/` do tsconfig não é resolvido
+ * quando o tsx roda scripts fora de `src/`.
  */
+import { PrismaClient } from "@prisma/client";
+import { sincronizarModulos } from "../src/core/sincronizar-modulos";
+
+const prisma = new PrismaClient();
+
 export async function main() {
+  const r = await sincronizarModulos(prisma);
   console.log(
-    "Sincronização de módulos: registry ainda não existe (Fase 2)."
+    `Módulos: ${r.modulos} sincronizados, ${r.modulosDesativados} desativados.`
+  );
+  console.log(
+    `Calculadoras: ${r.calculadoras} sincronizadas, ${r.calculadorasDesativadas} desativadas.`
   );
 }
 
 main()
-  .then(() => process.exit(0))
-  .catch((e) => {
+  .then(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  })
+  .catch(async (e) => {
     console.error(e);
+    await prisma.$disconnect();
     process.exit(1);
   });

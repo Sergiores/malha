@@ -6,8 +6,8 @@
 //  - createdAt/updatedAt em todas as tabelas.
 //  - Índices em todas as FKs.
 //
-// Fase 1: modelo Conta. Organizacao, Modulo, Calculadora,
-// OrganizacaoModulo e LogAuditoria entram na Fase 2.
+// Dois níveis que não devem ser confundidos: `Modulo` é o que se LICENCIA,
+// `Calculadora` é o que se EXECUTA dentro dele.
 
 generator client {
   provider = "prisma-client-js"
@@ -42,5 +42,154 @@ model Conta {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  organizacoes OrganizacaoMembro[]
+  logs         LogAuditoria[]
+
   @@map("conta")
+}
+
+// ------------------------------------------------------------------
+// Organizacao — a entidade que assina os módulos
+// ------------------------------------------------------------------
+// É quem contrata. O engenheiro autônomo é uma organização de um membro.
+model Organizacao {
+  id       Int     @id @default(autoincrement())
+  nome     String
+  cnpj     String? @unique
+  telefone String?
+
+  // Bloqueio comercial: false derruba o acesso de todos os membros,
+  // independentemente das licenças de módulo.
+  ativa Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  membros OrganizacaoMembro[]
+  modulos OrganizacaoModulo[]
+
+  @@map("organizacao")
+}
+
+enum PapelOrganizacao {
+  ADMIN
+  MEMBRO
+}
+
+// Vínculo N:N entre Conta e Organizacao, com papel.
+model OrganizacaoMembro {
+  id            Int              @id @default(autoincrement())
+  idOrganizacao Int              @map("id_organizacao")
+  idConta       Int              @map("id_conta")
+  papel         PapelOrganizacao @default(MEMBRO)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organizacao Organizacao @relation(fields: [idOrganizacao], references: [id], onDelete: Cascade)
+  conta       Conta       @relation(fields: [idConta], references: [id], onDelete: Cascade)
+
+  @@unique([idOrganizacao, idConta])
+  @@index([idOrganizacao])
+  @@index([idConta])
+  @@map("organizacao_membro")
+}
+
+// ------------------------------------------------------------------
+// Modulo — o que se LICENCIA
+// ------------------------------------------------------------------
+// Tabela, não enum: o superadmin precisa gerir sem deploy. As linhas são
+// mantidas por sincronizarModulos() a partir de src/core/registry.ts.
+model Modulo {
+  id        Int     @id @default(autoincrement())
+  slug      String  @unique
+  nome      String
+  descricao String?
+  ordem     Int     @default(0)
+
+  // Desativado quando some do registry. Nunca apagamos: licenças
+  // históricas continuam apontando para cá.
+  ativo Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  calculadoras Calculadora[]
+  organizacoes OrganizacaoModulo[]
+
+  @@map("modulo")
+}
+
+// ------------------------------------------------------------------
+// Calculadora — o que se EXECUTA
+// ------------------------------------------------------------------
+// Vive dentro de um módulo. Nasce vazia: as calculadoras entram só quando
+// as planilhas forem portadas.
+model Calculadora {
+  id        Int     @id @default(autoincrement())
+  idModulo  Int     @map("id_modulo")
+  slug      String  @unique
+  nome      String
+  descricao String?
+  ordem     Int     @default(0)
+  ativa     Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  modulo Modulo @relation(fields: [idModulo], references: [id], onDelete: Cascade)
+
+  @@index([idModulo])
+  @@map("calculadora")
+}
+
+// ------------------------------------------------------------------
+// OrganizacaoModulo — a LICENÇA
+// ------------------------------------------------------------------
+// O "vencimento dos módulos". Campos de assinatura (ciclo, valor, status
+// de cobrança) entram aqui na fase do gateway, sem migração destrutiva.
+model OrganizacaoModulo {
+  id            Int @id @default(autoincrement())
+  idOrganizacao Int @map("id_organizacao")
+  idModulo      Int @map("id_modulo")
+
+  validoDe  DateTime  @map("valido_de") @db.Date
+  // null = sem prazo (licença vitalícia / cortesia).
+  validoAte DateTime? @map("valido_ate") @db.Date
+
+  // Revogação imediata sem mexer nas datas.
+  ativo      Boolean @default(true)
+  observacao String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organizacao Organizacao @relation(fields: [idOrganizacao], references: [id], onDelete: Cascade)
+  modulo      Modulo      @relation(fields: [idModulo], references: [id], onDelete: Cascade)
+
+  @@unique([idOrganizacao, idModulo])
+  @@index([idOrganizacao])
+  @@index([idModulo])
+  @@map("organizacao_modulo")
+}
+
+// ------------------------------------------------------------------
+// LogAuditoria — quem concedeu ou revogou o quê, e quando
+// ------------------------------------------------------------------
+// Não é opcional em produto vendido: licença é dinheiro.
+model LogAuditoria {
+  id         Int    @id @default(autoincrement())
+  idConta    Int?   @map("id_conta")
+  acao       String
+  entidade   String
+  entidadeId Int?   @map("entidade_id")
+  detalhes   Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  conta Conta? @relation(fields: [idConta], references: [id], onDelete: SetNull)
+
+  @@index([idConta])
+  @@index([entidade, entidadeId])
+  @@map("log_auditoria")
 }

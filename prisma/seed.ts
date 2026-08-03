@@ -4,14 +4,15 @@
  * Roda automaticamente ao final de `prisma migrate dev` (bloco "prisma".seed
  * do package.json) e manualmente por `npm run db:seed`.
  *
- * Cria o superadmin a partir de SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD.
- * A senha vai direto para o Supabase Auth (que guarda o hash) e a Conta
- * nasce com `trocarSenha = true`.
- *
- * Fase 2 acrescenta aqui a chamada a sincronizarModulos().
+ * Faz duas coisas:
+ *  1. cria o superadmin a partir de SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD
+ *     (a senha vai para o Supabase Auth, que guarda o hash; a Conta nasce
+ *     com `trocarSenha = true`);
+ *  2. sincroniza o registry de módulos com o banco.
  */
 import { PrismaClient } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
+import { sincronizarModulos } from "../src/core/sincronizar-modulos";
 
 const prisma = new PrismaClient();
 
@@ -89,6 +90,11 @@ async function semearSuperadmin() {
 
 export async function main() {
   await semearSuperadmin();
+
+  const r = await sincronizarModulos(prisma);
+  console.log(
+    `Módulos: ${r.modulos} sincronizados, ${r.modulosDesativados} desativados.`
+  );
 }
 
 main()

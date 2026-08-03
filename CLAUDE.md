@@ -131,7 +131,7 @@ src/middleware.ts             sessão (não autorização)
 |------|--------|--------|
 | 0 | Fundação: andaime, Supabase, deploy | ✅ Concluída (deploy pendente) |
 | 1 | Autenticação e Conta | ✅ Concluída |
-| 2 | Schema + registry + seed do superadmin | Planejada (seed já feito) |
+| 2 | Schema + registry + seed do superadmin | ✅ Concluída |
 | 3 | Organizações, membros, papéis | Planejada |
 | 4 | Painel do superadmin (contas, licenças, módulos) | Planejada |
 | 5 | `requireModulo()` + navegação por licença | Planejada |
@@ -169,6 +169,31 @@ src/middleware.ts             sessão (não autorização)
 `/app` sem sessão → login · login do superadmin → `/redefinir-senha` (flag
 `trocarSenha`) · login comum → `/app` · edição de perfil grava · logout
 volta ao login · conta inativada → login recusado com aviso.
+
+### Fase 2 — decisões
+
+- **Tabelas**: `Organizacao`, `OrganizacaoMembro` (N:N com `papel`),
+  `Modulo`, `Calculadora`, `OrganizacaoModulo` (a licença) e `LogAuditoria`.
+- **`Calculadora` nasce vazia** — a estrutura existe, mas nenhuma
+  calculadora é semeada. Elas entram só quando as planilhas forem portadas.
+- **`OrganizacaoModulo.validoAte` aceita null** = licença sem prazo. E o
+  campo `ativo` permite revogar na hora sem mexer nas datas.
+- **`Organizacao.ativa = false`** derruba todos os membros de uma vez,
+  independentemente das licenças — é o bloqueio comercial.
+- **`sincronizarModulos()` nunca apaga.** Verificado por teste: módulo e
+  calculadora fora do registry viram `ativo = false`, e a licença que
+  apontava para eles é preservada. Apagar destruiria o histórico de quem
+  comprou o quê.
+- Os scripts em `prisma/` importam de `src/` por **caminho relativo** — o
+  alias `@/` do tsconfig não é resolvido pelo tsx fora de `src/`.
+
+### Módulos ativos
+
+`estrutura-concreto` · `estrutura-metalica` · `concreto-fresco-endurecido`
+
+Para criar outro: adicionar em `src/core/registry.ts` e rodar
+`npm run db:sync-modulos`. O slug é a chave estável (vai na URL e no
+`requireModulo()`) — trate como imutável.
 
 ### Dados do projeto Supabase (confirmados por teste)
 
