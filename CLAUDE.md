@@ -129,7 +129,7 @@ src/middleware.ts             sessão (não autorização)
 
 | Fase | Escopo | Status |
 |------|--------|--------|
-| 0 | Fundação: andaime, Supabase, deploy | 🔄 Em andamento |
+| 0 | Fundação: andaime, Supabase, deploy | ✅ Concluída (deploy pendente) |
 | 1 | Autenticação e Conta | Planejada |
 | 2 | Schema + registry + seed do superadmin | Planejada |
 | 3 | Organizações, membros, papéis | Planejada |
@@ -139,18 +139,31 @@ src/middleware.ts             sessão (não autorização)
 
 ### Fase 0 — o que já está pronto
 
-- Next 15.5.22 + TS + Tailwind 3 + shadcn configurado (`components.json`)
-- `npm audit` limpo (via `overrides`)
+- Next 15.5.22 + TS + Tailwind 3 + shadcn (button, card, input, label)
+- `npm audit` limpo (via `overrides`), `npm run build` e `tsc --noEmit` passando
 - Clients Supabase (`server`, `client`, `admin`, `middleware`) e Prisma
 - `src/middleware.ts` com o matcher
 - `prisma/schema.prisma` só com datasource/generator
-- `.env.example` documentado e `.env` com placeholders
-- **Pendente:** usuário preencher o `.env` e validar a conexão
+- `prisma/seed.ts` e `prisma/sync-modulos.ts` como stubs
+- **Conexão com o Supabase validada** — `DATABASE_URL` e `DIRECT_URL` conectam
+- **Pendente:** deploy na Vercel + subdomínio (pode esperar a Fase 1)
+
+### Dados do projeto Supabase (confirmados por teste)
+
+- ref: `btcighnzuaomovgpehru` · região: `sa-east-1` · host do pooler: `aws-0-…`
+- Pooler transaction 6543 → `DATABASE_URL` (app)
+- Pooler session 5432 → `DIRECT_URL` (Prisma Migrate)
 
 ## Notas / pegadinhas
 
 - `.gitignore` ignora `.env*` mas tem exceção `!.env.example`. Se criar novos
   arquivos de exemplo, adicione a exceção.
 - `DIRECT_URL` é obrigatória: migration não funciona pelo pooler do Supabase.
+- **`prisma db execute` trava** contra o pooler transaction (6543) — o
+  Supavisor nesse modo não fecha a sessão como o comando espera. Não é sinal
+  de credencial errada. Para testar conexão use `prisma db pull` (que usa a
+  `DIRECT_URL`) ou um script com o driver `pg`.
+- Senha do banco com símbolos precisa de percent-encoding na connection
+  string (`@` → `%40`). A atual é alfanumérica justamente para evitar isso.
 - A senha do superadmin **nunca** deve ser escrita em arquivo versionado. O
   seed lê de `SUPERADMIN_PASSWORD` e o Supabase Auth guarda o hash.
