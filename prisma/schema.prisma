@@ -58,6 +58,10 @@ model Organizacao {
   cnpj     String? @unique
   telefone String?
 
+  // Entrada de novos membros. O `id` é interno; quem entra usa este código
+  // curto (Crockford Base32, sem caracteres ambíguos). Fixo, sem expiração.
+  codigoConvite String @unique @map("codigo_convite")
+
   // Bloqueio comercial: false derruba o acesso de todos os membros,
   // independentemente das licenças de módulo.
   ativa Boolean @default(true)

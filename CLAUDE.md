@@ -132,7 +132,7 @@ src/middleware.ts             sessão (não autorização)
 | 0 | Fundação: andaime, Supabase, deploy | ✅ Concluída (deploy pendente) |
 | 1 | Autenticação e Conta | ✅ Concluída |
 | 2 | Schema + registry + seed do superadmin | ✅ Concluída |
-| 3 | Organizações, membros, papéis | Planejada |
+| 3 | Organizações, membros, papéis | ✅ Concluída |
 | 4 | Painel do superadmin (contas, licenças, módulos) | Planejada |
 | 5 | `requireModulo()` + navegação por licença | Planejada |
 | 6 | Calculadoras a partir das planilhas | Planejada |
@@ -187,6 +187,31 @@ volta ao login · conta inativada → login recusado com aviso.
 - Os scripts em `prisma/` importam de `src/` por **caminho relativo** — o
   alias `@/` do tsconfig não é resolvido pelo tsx fora de `src/`.
 
+### Fase 3 — decisões
+
+- **Qualquer usuário logado pode criar organização** e vira ADMIN dela. É
+  inofensivo: sem licença concedida pelo superadmin, a organização não dá
+  acesso a nada. Facilita trial e não bloqueia venda.
+- **Entrada por código de convite** (`Organizacao.codigoConvite`, Crockford
+  Base32 de 6 caracteres, fixo e sem expiração), em vez de convite por
+  e-mail — não depende de infra de e-mail transacional. O Zod faz
+  `toUpperCase()`, então digitar minúsculo funciona.
+- **Nunca fica sem admin**: `alternarPapel` e `removerMembro` recusam a
+  operação quando o alvo é o último ADMIN da organização.
+- **Actions revalidam o par (organização, membro)** antes de agir. Sem isso,
+  um admin poderia mexer no vínculo de outra empresa passando um id
+  arbitrário no formulário — o `idMembro` vem do HTML, não é confiável.
+- Código de convite e botões de gestão só renderizam para ADMIN, **e** as
+  actions checam de novo. Esconder botão não é controle de acesso.
+
+### Fase 3 — validado no navegador
+
+Ana cria organização e vira admin · os 3 módulos aparecem como "Não
+contratado" · Bruno (não membro) recebe **404** em `/o/1`, não 403 · Bruno
+entra com o código digitado em minúsculas e vira Membro · membro comum não
+vê código nem botões · rebaixar o último admin é recusado · Ana promove
+Bruno e então consegue se rebaixar.
+
 ### Módulos ativos
 
 `estrutura-concreto` · `estrutura-metalica` · `concreto-fresco-endurecido`
@@ -206,6 +231,16 @@ Para criar outro: adicionar em `src/core/registry.ts` e rodar
 - `.gitignore` ignora `.env*` mas tem exceção `!.env.example`. Se criar novos
   arquivos de exemplo, adicione a exceção.
 - `DIRECT_URL` é obrigatória: migration não funciona pelo pooler do Supabase.
+- 🚨 **NUNCA passe `--shadow-database-url` apontando para o banco real.**
+  O Prisma trata a shadow database como descartável: dropa tudo e reaplica
+  as migrations para calcular o diff. Isso já apagou os dados uma vez aqui.
+  Se precisar do SQL de uma migration, use `prisma migrate dev` (ele cria a
+  shadow sozinho) ou escreva o `migration.sql` à mão e rode
+  `prisma migrate deploy`.
+- **`prisma migrate dev` falha em ambiente não-interativo** quando o
+  Prisma quer confirmar um aviso (ex.: `UNIQUE` em coluna nova). Saída:
+  criar a pasta em `prisma/migrations/<timestamp>_<nome>/migration.sql` à
+  mão e aplicar com `prisma migrate deploy`.
 - **`prisma db execute` trava** contra o pooler transaction (6543) — o
   Supavisor nesse modo não fecha a sessão como o comando espera. Não é sinal
   de credencial errada. Para testar conexão use `prisma db pull` (que usa a
