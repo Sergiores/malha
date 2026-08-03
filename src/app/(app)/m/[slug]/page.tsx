@@ -16,7 +16,7 @@ export default async function ModuloPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { modulo, licenca } = await requireModulo(slug);
+  const { modulo } = await requireModulo(slug);
 
   const calculadoras = await prisma.calculadora.findMany({
     where: { idModulo: modulo.id, ativa: true },
@@ -30,8 +30,8 @@ export default async function ModuloPage({
         <p className="text-muted-foreground">{modulo.descricao}</p>
         <p className="mt-2 inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
           <PackageCheck className="h-3 w-3" />
-          {licenca?.validoAte
-            ? `Liberado até ${dataBr(licenca.validoAte)}`
+          {modulo.validoAte
+            ? `Liberado até ${dataBr(modulo.validoAte)}`
             : "Liberado, sem prazo"}
         </p>
       </div>

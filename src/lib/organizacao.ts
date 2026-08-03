@@ -1,52 +1,118 @@
 import { cache } from "react";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { requireConta } from "@/lib/auth";
 import { gerarCodigoConvite } from "@/lib/utils";
 
 /**
- * Organização do usuário logado.
+ * Conta + organização do usuário logado, em UMA query.
+ *
+ * Antes eram três round-trips em série (conta → vínculo → organização). Com o
+ * banco em sa-east-1 e as funções fora da região, cada um custa ~150 ms — o
+ * que dominava o tempo de navegação. O `include` resolve tudo num LATERAL
+ * JOIN (`relationJoins` no schema).
  *
  * Hoje o sistema é monousuário: cada conta tem uma organização própria,
- * criada sob demanda e invisível na interface. A licença continua morando
- * em `Organizacao` — é o que permite ligar o multiusuário depois apenas
- * reativando as telas de membros, sem migrar dado nenhum.
+ * criada sob demanda e invisível na interface. A licença continua morando em
+ * `Organizacao`, então ligar o multiusuário depois é reativar telas — não
+ * migrar dados.
  *
- * A organização vem SEMPRE da sessão, nunca de parâmetro do usuário. Quando
- * o multiusuário voltar, o `idOrg` volta para a URL e os guards de membro
- * voltam junto — aí a distinção passa a importar de novo.
+ * A organização vem SEMPRE da sessão, nunca de parâmetro do usuário. Quando o
+ * multiusuário voltar, o `idOrg` volta para a URL e os guards de membro
+ * voltam junto.
  */
-export const organizacaoPessoal = cache(async function organizacaoPessoal() {
-  const { conta } = await requireConta();
+export const contaComOrganizacao = cache(async function contaComOrganizacao() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const vinculo = await prisma.organizacaoMembro.findFirst({
-    where: { idConta: conta.id },
-    include: { organizacao: true },
-    orderBy: { id: "asc" },
+  if (!user) redirect("/login");
+
+  const conta = await prisma.conta.findUnique({
+    where: { authUserId: user.id },
+    include: {
+      organizacoes: {
+        take: 1,
+        orderBy: { id: "asc" },
+        include: { organizacao: true },
+      },
+    },
   });
 
-  if (vinculo) return { conta, organizacao: vinculo.organizacao };
+  // Conta inexistente ou sem organização: caminho frio, só na primeira visita
+  // e em usuários criados por fora (Admin API, seed).
+  if (!conta) return criarContaEOrganizacao(user.id, user.email, user.user_metadata?.nome);
 
-  // Primeira visita: cria a organização junto com o vínculo, em transação —
-  // organização sem dono seria órfã e invisível para o superadmin.
-  const organizacao = await prisma.$transaction(async (tx) => {
+  if (!conta.ativa) {
+    await supabase.auth.signOut();
+    redirect("/login?error=conta_inativa");
+  }
+  if (conta.trocarSenha) redirect("/redefinir-senha");
+
+  const organizacao = conta.organizacoes[0]?.organizacao;
+  if (!organizacao) {
+    return {
+      user,
+      conta,
+      organizacao: await criarOrganizacaoPara(conta.id, conta.nome ?? conta.email),
+    };
+  }
+
+  return { user, conta, organizacao };
+});
+
+/** Compatibilidade: quem só precisa do perfil. */
+export const requireConta = cache(async function requireConta() {
+  const { user, conta } = await contaComOrganizacao();
+  return { user, conta };
+});
+
+/** Só a organização — usada pelo gate de módulo. */
+export const organizacaoPessoal = cache(async function organizacaoPessoal() {
+  const { conta, organizacao } = await contaComOrganizacao();
+  return { conta, organizacao };
+});
+
+async function criarContaEOrganizacao(
+  authUserId: string,
+  email: string | undefined,
+  nome: unknown
+) {
+  const conta = await prisma.conta.create({
+    data: {
+      authUserId,
+      email,
+      nome: typeof nome === "string" ? nome : null,
+    },
+    include: { organizacoes: { include: { organizacao: true } } },
+  });
+  const organizacao = await criarOrganizacaoPara(
+    conta.id,
+    conta.nome ?? conta.email
+  );
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return { user: user!, conta, organizacao };
+}
+
+async function criarOrganizacaoPara(idConta: number, nome: string | null) {
+  // Transação: organização sem dono seria órfã e invisível no painel.
+  return prisma.$transaction(async (tx) => {
     const criada = await tx.organizacao.create({
       data: {
-        nome: conta.nome ?? conta.email ?? `Conta ${conta.id}`,
+        nome: nome ?? `Conta ${idConta}`,
         codigoConvite: await gerarCodigoUnico(tx),
       },
     });
     await tx.organizacaoMembro.create({
-      data: {
-        idOrganizacao: criada.id,
-        idConta: conta.id,
-        papel: "ADMIN",
-      },
+      data: { idOrganizacao: criada.id, idConta, papel: "ADMIN" },
     });
     return criada;
   });
-
-  return { conta, organizacao };
-});
+}
 
 /** Código único. Sobra do modelo de convite; volta a ter uso no multiusuário. */
 async function gerarCodigoUnico(

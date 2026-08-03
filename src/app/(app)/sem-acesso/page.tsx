@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { CircleSlash, Lock, TimerOff } from "lucide-react";
-import { prisma } from "@/lib/prisma";
-import { organizacaoPessoal } from "@/lib/organizacao";
+import { meusModulos } from "@/lib/modulo";
 import { dataBr } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,28 +39,17 @@ export default async function SemAcessoPage({
 }: {
   searchParams: Promise<{ modulo?: string; motivo?: string }>;
 }) {
-  const { organizacao } = await organizacaoPessoal();
   const { modulo: slug, motivo } = await searchParams;
 
   const chave: Motivo =
     motivo && motivo in MOTIVOS ? (motivo as Motivo) : "sem_licenca";
   const m = MOTIVOS[chave];
 
-  // O nome do módulo vem do banco, não da URL — o parâmetro é do usuário.
-  const modulo = slug
-    ? await prisma.modulo.findUnique({
-        where: { slug },
-        select: {
-          nome: true,
-          organizacoes: {
-            where: { idOrganizacao: organizacao.id },
-            select: { validoAte: true },
-          },
-        },
-      })
-    : null;
-
-  const validoAte = modulo?.organizacoes[0]?.validoAte ?? null;
+  // Reaproveita a lista que o layout já carregou — nenhuma query extra. E o
+  // nome vem daí, não da URL: o parâmetro é do usuário e seria refletido na
+  // tela.
+  const modulo = slug ? (await meusModulos()).find((x) => x.slug === slug) : null;
+  const validoAte = modulo?.validoAte ?? null;
 
   return (
     <div className="mx-auto max-w-lg">

@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { organizacaoPessoal } from "@/lib/organizacao";
+import { contaComOrganizacao } from "@/lib/organizacao";
 
 /**
  * Leitura da situação das licenças e o gate comercial `requireModulo()`.
@@ -73,9 +73,13 @@ export async function modulosDaOrganizacao(
   });
 }
 
-/** Módulos do usuário logado, para o menu lateral e a home. */
+/**
+ * Módulos do usuário logado. Usada pelo menu lateral, pela home e pelo gate —
+ * o `cache()` garante uma consulta só por request, mesmo com os três
+ * chamando.
+ */
 export const meusModulos = cache(async function meusModulos() {
-  const { organizacao } = await organizacaoPessoal();
+  const { organizacao } = await contaComOrganizacao();
   return modulosDaOrganizacao(organizacao.id);
 });
 
@@ -93,19 +97,16 @@ export const meusModulos = cache(async function meusModulos() {
  *    motivo. É cliente legítimo numa porta fechada, não invasor.
  */
 export const requireModulo = cache(async function requireModulo(slug: string) {
-  const { conta, organizacao } = await organizacaoPessoal();
+  // Reaproveita a lista que o layout já carregou para montar o menu — o
+  // `cache()` de `meusModulos()` faz o gate custar ZERO query adicional.
+  const modulos = await meusModulos();
+  const modulo = modulos.find((m) => m.slug === slug);
 
-  const modulo = await prisma.modulo.findUnique({
-    where: { slug },
-    include: { organizacoes: { where: { idOrganizacao: organizacao.id } } },
-  });
+  if (!modulo) notFound();
 
-  if (!modulo || !modulo.ativo) notFound();
-
-  const situacao = situacaoDaLicenca(modulo.organizacoes[0]);
-  if (situacao !== "vigente") {
-    redirect(`/sem-acesso?modulo=${slug}&motivo=${situacao}`);
+  if (modulo.situacao !== "vigente") {
+    redirect(`/sem-acesso?modulo=${slug}&motivo=${modulo.situacao}`);
   }
 
-  return { conta, organizacao, modulo, licenca: modulo.organizacoes[0] };
+  return { modulo };
 });
