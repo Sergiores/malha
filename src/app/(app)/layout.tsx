@@ -2,8 +2,10 @@ import Link from "next/link";
 import { Ruler, Shield, UserRound } from "lucide-react";
 import { requireConta } from "@/lib/auth";
 import { isSuperadmin } from "@/lib/superadmin";
+import { meusModulos } from "@/lib/modulo";
 import { sair } from "@/app/(auth)/actions";
 import { Button } from "@/components/ui/button";
+import { MenuModulos, type ItemMenu } from "@/components/menu-modulos";
 
 export default async function AppLayout({
   children,
@@ -14,10 +16,17 @@ export default async function AppLayout({
   const { conta } = await requireConta();
   const ehSuper = isSuperadmin(conta.email);
 
+  const itens: ItemMenu[] = (await meusModulos()).map((m) => ({
+    slug: m.slug,
+    nome: m.nome,
+    liberado: m.situacao === "vigente",
+    situacao: m.situacao,
+  }));
+
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="border-b bg-background">
-        <div className="container mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+        <div className="container mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
           <Link href="/app" className="flex items-center gap-2">
             <Ruler className="h-6 w-6 text-primary" />
             <span className="font-bold tracking-tight">Malha</span>
@@ -48,7 +57,15 @@ export default async function AppLayout({
           </nav>
         </div>
       </header>
-      <main className="container mx-auto max-w-6xl px-4 py-6">{children}</main>
+
+      <div className="container mx-auto flex max-w-7xl gap-6 px-4 py-6">
+        <aside className="hidden w-56 shrink-0 md:block">
+          <div className="sticky top-6 rounded-lg border bg-background p-2">
+            <MenuModulos itens={itens} />
+          </div>
+        </aside>
+        <main className="min-w-0 flex-1">{children}</main>
+      </div>
     </div>
   );
 }

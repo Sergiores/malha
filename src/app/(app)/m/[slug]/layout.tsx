@@ -1,4 +1,3 @@
-import { parseIdOrg } from "@/lib/organizacao";
 import { requireModulo } from "@/lib/modulo";
 
 /**
@@ -13,10 +12,10 @@ export default async function ModuloLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ idOrg: string; slug: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { idOrg, slug } = await params;
-  await requireModulo(parseIdOrg(idOrg), slug);
+  const { slug } = await params;
+  await requireModulo(slug);
 
   return <>{children}</>;
 }

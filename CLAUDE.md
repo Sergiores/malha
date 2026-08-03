@@ -93,10 +93,15 @@ desativar a confirmação de e-mail.
    entrada no registry. A sincronização **nunca apaga**: módulo removido do
    registry vira `ativo = false`, preservando licenças históricas.
 
-4. **A organização vem sempre da URL** (`/o/[idOrg]/...`), nunca de cookie ou
-   "organização ativa" em sessão. Um usuário pode pertencer a várias
-   organizações, e estado implícito de tenant é a origem clássica de vazamento
-   entre clientes. Mesmo padrão do Bolicho com `requireMembro(idTurma)`.
+4. **Monousuário por enquanto.** Cada conta ganha uma `Organizacao` própria,
+   criada sob demanda por `organizacaoPessoal()` no primeiro acesso e
+   invisível na interface. A licença continua morando em `Organizacao`, então
+   ligar o multiusuário depois é reativar telas — não migrar dados.
+
+   A organização vem da **sessão**, não da URL: como é 1:1 com a conta, não há
+   escolha do usuário e portanto não há como forjar. Quando o multiusuário
+   voltar, o `idOrg` volta para a URL (`/o/[idOrg]/...`) e os guards de membro
+   voltam junto — aí estado implícito de tenant volta a ser perigoso.
 
 5. **Guards em profundidade.** Todo guard roda no **layout**, é repetido na
    **page** e no topo de **cada server action**. O guard no layout é o que
@@ -114,13 +119,15 @@ prisma/seed.ts                superadmin + sincronizarModulos()
 prisma/sync-modulos.ts        só a sincronização
 src/core/registry.ts          declaração de módulos e calculadoras
 src/app/(auth)/               login, cadastro, recuperar/redefinir senha
-src/app/(app)/                área logada
-src/app/(app)/o/[idOrg]/      escopo da organização (módulos, membros)
+src/app/(app)/                área logada (layout com menu lateral)
+src/app/(app)/m/[slug]/       escopo do módulo — calculadoras entram aqui
+src/app/(app)/sem-acesso/     licença ausente, vencida ou revogada
 src/app/auth/callback/        route handler dos e-mails do Supabase
 src/app/superadmin/           painel do superadmin
+src/components/menu-modulos.tsx  menu lateral, habilitado por licença
 src/lib/prisma.ts             cliente Prisma (singleton)
 src/lib/auth.ts               requireConta()
-src/lib/organizacao.ts        requireMembroOrg / requireAdminOrg
+src/lib/organizacao.ts        organizacaoPessoal() — cria sob demanda
 src/lib/modulo.ts             requireModulo() — o gate comercial
 src/lib/superadmin.ts         requireSuperadmin()
 src/lib/supabase/             clients server/browser/admin + middleware
@@ -288,6 +295,22 @@ valendo. Para voltar a exigir a troca:
 | Não-membro (inclusive o superadmin) | 404 em todas as rotas de `/o/3` |
 
 Reativar a licença devolve o acesso e o card volta a ser link.
+
+### Simplificação para monousuário
+
+As telas de criar organização, entrar por código de convite e gerir membros
+**foram removidas** (estão no histórico do git, commits das Fases 3 a 5). O
+que sobrou:
+
+- `organizacaoPessoal()` cria a organização da conta no primeiro acesso
+- menu lateral fixo com os três módulos, habilitados conforme licença
+- módulo bloqueado **continua visível** no menu e leva a `/sem-acesso` — o
+  cliente precisa saber que existe para querer contratar
+- no painel do superadmin, a aba "Organizações" virou lista de **clientes**,
+  mostrando o e-mail do dono; não há mais criação manual
+
+`Organizacao.codigoConvite` continua no schema, preenchido automaticamente.
+Volta a ter uso quando o multiusuário chegar.
 
 ### Módulos ativos
 

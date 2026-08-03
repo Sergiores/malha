@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Building2, LogIn, Plus, ShieldCheck } from "lucide-react";
+import { CircleSlash, Lock, PackageCheck, TimerOff } from "lucide-react";
 import { requireConta } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { meusModulos, type SituacaoLicenca } from "@/lib/modulo";
+import { dataBr } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -9,88 +10,102 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
+const SITUACAO = {
+  vigente: {
+    rotulo: "Liberado",
+    classe: "bg-primary/10 text-primary",
+    Icone: PackageCheck,
+  },
+  vencida: {
+    rotulo: "Vencido",
+    classe: "bg-destructive/10 text-destructive",
+    Icone: TimerOff,
+  },
+  revogada: {
+    rotulo: "Revogado",
+    classe: "bg-destructive/10 text-destructive",
+    Icone: CircleSlash,
+  },
+  sem_licenca: {
+    rotulo: "Não contratado",
+    classe: "bg-muted text-muted-foreground",
+    Icone: Lock,
+  },
+} satisfies Record<
+  SituacaoLicenca,
+  { rotulo: string; classe: string; Icone: typeof Lock }
+>;
 
 export default async function AppHome() {
   const { conta } = await requireConta();
-
-  const vinculos = await prisma.organizacaoMembro.findMany({
-    where: { idConta: conta.id, organizacao: { ativa: true } },
-    include: {
-      organizacao: {
-        include: { _count: { select: { membros: true } } },
-      },
-    },
-    orderBy: { organizacao: { nome: "asc" } },
-  });
+  const modulos = await meusModulos();
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Olá, {conta.nome ?? "engenheiro"}
-          </h1>
-          <p className="text-muted-foreground">
-            Escolha uma organização para acessar os módulos.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/organizacoes/entrar">
-            <Button variant="outline" size="sm">
-              <LogIn className="h-4 w-4" />
-              Entrar com código
-            </Button>
-          </Link>
-          <Link href="/organizacoes/nova">
-            <Button size="sm">
-              <Plus className="h-4 w-4" />
-              Nova organização
-            </Button>
-          </Link>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Olá, {conta.nome ?? "engenheiro"}
+        </h1>
+        <p className="text-muted-foreground">
+          Escolha um módulo no menu ao lado ou nos cartões abaixo.
+        </p>
       </div>
 
-      {vinculos.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Building2 className="h-5 w-5 text-primary" />
-              Nenhuma organização ainda
-            </CardTitle>
-            <CardDescription>
-              Crie a sua ou entre em uma existente com o código de convite.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {vinculos.map((v) => (
-            <Link key={v.id} href={`/o/${v.organizacao.id}`}>
-              <Card className="h-full transition-colors hover:border-primary">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Building2 className="h-5 w-5 text-primary" />
-                    {v.organizacao.nome}
-                  </CardTitle>
-                  <CardDescription>
-                    {v.organizacao._count.membros}{" "}
-                    {v.organizacao._count.membros === 1 ? "membro" : "membros"}
-                  </CardDescription>
-                </CardHeader>
-                {v.papel === "ADMIN" && (
-                  <CardContent>
-                    <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                      <ShieldCheck className="h-3 w-3" />
-                      Administrador
-                    </span>
-                  </CardContent>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {modulos.map((m) => {
+          const s = SITUACAO[m.situacao];
+          const liberado = m.situacao === "vigente";
+
+          const cartao = (
+            <Card
+              className={
+                liberado
+                  ? "h-full transition-colors hover:border-primary"
+                  : "h-full opacity-70"
+              }
+            >
+              <CardHeader>
+                <div className="mb-2">
+                  <span
+                    className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${s.classe}`}
+                  >
+                    <s.Icone className="h-3 w-3" />
+                    {s.rotulo}
+                  </span>
+                </div>
+                <CardTitle className="text-base">{m.nome}</CardTitle>
+                <CardDescription>{m.descricao}</CardDescription>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">
+                {m.situacao === "sem_licenca" ? (
+                  "Fale com o administrador para contratar."
+                ) : (
+                  <>
+                    Vigência: {dataBr(m.validoDe)} até{" "}
+                    {m.validoAte ? dataBr(m.validoAte) : "sem prazo"}
+                  </>
                 )}
-              </Card>
+              </CardContent>
+            </Card>
+          );
+
+          // Bloqueado também é clicável: leva à página que explica o motivo.
+          // requireModulo() barra de qualquer forma quem digitar a URL.
+          return (
+            <Link
+              key={m.id}
+              href={
+                liberado
+                  ? `/m/${m.slug}`
+                  : `/sem-acesso?modulo=${m.slug}&motivo=${m.situacao}`
+              }
+            >
+              {cartao}
             </Link>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }

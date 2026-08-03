@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CircleSlash, Lock, TimerOff } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { requireMembroOrg, parseIdOrg } from "@/lib/organizacao";
+import { organizacaoPessoal } from "@/lib/organizacao";
 import { dataBr } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +28,7 @@ const MOTIVOS = {
   sem_licenca: {
     titulo: "Módulo não contratado",
     texto:
-      "Esta organização ainda não tem licença para este módulo. Fale com o administrador do sistema para contratá-lo.",
+      "Você ainda não tem licença para este módulo. Fale com o administrador do sistema para contratá-lo.",
     Icone: Lock,
   },
 } as const;
@@ -36,16 +36,11 @@ const MOTIVOS = {
 type Motivo = keyof typeof MOTIVOS;
 
 export default async function SemAcessoPage({
-  params,
   searchParams,
 }: {
-  params: Promise<{ idOrg: string }>;
   searchParams: Promise<{ modulo?: string; motivo?: string }>;
 }) {
-  const { idOrg } = await params;
-  const id = parseIdOrg(idOrg);
-  await requireMembroOrg(id);
-
+  const { organizacao } = await organizacaoPessoal();
   const { modulo: slug, motivo } = await searchParams;
 
   const chave: Motivo =
@@ -59,7 +54,7 @@ export default async function SemAcessoPage({
         select: {
           nome: true,
           organizacoes: {
-            where: { idOrganizacao: id },
+            where: { idOrganizacao: organizacao.id },
             select: { validoAte: true },
           },
         },
@@ -87,8 +82,8 @@ export default async function SemAcessoPage({
               Vigência encerrada em <strong>{dataBr(validoAte)}</strong>.
             </p>
           )}
-          <Link href={`/o/${id}`}>
-            <Button variant="outline">Voltar aos módulos</Button>
+          <Link href="/app">
+            <Button variant="outline">Voltar ao início</Button>
           </Link>
         </CardContent>
       </Card>

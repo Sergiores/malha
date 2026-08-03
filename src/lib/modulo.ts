@@ -1,11 +1,12 @@
 import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireMembroOrg } from "@/lib/organizacao";
+import { organizacaoPessoal } from "@/lib/organizacao";
 
 /**
  * Leitura da situação das licenças e o gate comercial `requireModulo()`.
  */
+
 export type SituacaoLicenca = "vigente" | "vencida" | "revogada" | "sem_licenca";
 
 export type ModuloComLicenca = {
@@ -72,38 +73,39 @@ export async function modulosDaOrganizacao(
   });
 }
 
+/** Módulos do usuário logado, para o menu lateral e a home. */
+export const meusModulos = cache(async function meusModulos() {
+  const { organizacao } = await organizacaoPessoal();
+  return modulosDaOrganizacao(organizacao.id);
+});
+
 /**
  * O GATE COMERCIAL.
  *
- * Exige que a organização tenha licença vigente do módulo. Deve ser chamado
- * no layout do módulo, em cada page e no topo de toda server action que
- * execute algo dentro dele — esconder o link do menu não é controle de
- * acesso, e é por aqui que passa a receita do produto.
+ * Exige licença vigente do módulo para o usuário logado. Roda no layout da
+ * rota do módulo, então toda calculadora futura já nasce protegida — e é
+ * repetido nas pages e em toda server action que execute algo dentro dele.
+ * Esconder o item do menu não é controle de acesso.
  *
- * Falhas se comportam de dois jeitos distintos, de propósito:
- *  - módulo inexistente ou desativado -> `notFound()`, porque não há o que
- *    contratar;
+ * Falhas se comportam de dois jeitos, de propósito:
+ *  - módulo inexistente ou desativado -> `notFound()`, não há o que contratar;
  *  - licença ausente, vencida ou revogada -> `/sem-acesso`, que explica o
- *    motivo e diz o que fazer. É cliente legítimo batendo numa porta
- *    fechada, não invasor.
+ *    motivo. É cliente legítimo numa porta fechada, não invasor.
  */
-export const requireModulo = cache(async function requireModulo(
-  idOrg: number,
-  slug: string
-) {
-  const ctx = await requireMembroOrg(idOrg);
+export const requireModulo = cache(async function requireModulo(slug: string) {
+  const { conta, organizacao } = await organizacaoPessoal();
 
   const modulo = await prisma.modulo.findUnique({
     where: { slug },
-    include: { organizacoes: { where: { idOrganizacao: idOrg } } },
+    include: { organizacoes: { where: { idOrganizacao: organizacao.id } } },
   });
 
   if (!modulo || !modulo.ativo) notFound();
 
   const situacao = situacaoDaLicenca(modulo.organizacoes[0]);
   if (situacao !== "vigente") {
-    redirect(`/o/${idOrg}/sem-acesso?modulo=${slug}&motivo=${situacao}`);
+    redirect(`/sem-acesso?modulo=${slug}&motivo=${situacao}`);
   }
 
-  return { ...ctx, modulo, licenca: modulo.organizacoes[0] };
+  return { conta, organizacao, modulo, licenca: modulo.organizacoes[0] };
 });

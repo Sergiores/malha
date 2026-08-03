@@ -1,72 +1,64 @@
 import { cache } from "react";
-import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireConta } from "@/lib/auth";
 import { gerarCodigoConvite } from "@/lib/utils";
 
 /**
- * Guards de organização.
+ * Organização do usuário logado.
  *
- * A organização vem SEMPRE da URL (`/o/[idOrg]/...`), nunca de cookie ou
- * "organização ativa" em sessão: um usuário pode pertencer a várias, e
- * estado implícito de tenant é a origem clássica de vazamento entre
- * clientes.
+ * Hoje o sistema é monousuário: cada conta tem uma organização própria,
+ * criada sob demanda e invisível na interface. A licença continua morando
+ * em `Organizacao` — é o que permite ligar o multiusuário depois apenas
+ * reativando as telas de membros, sem migrar dado nenhum.
  *
- * Devolvem `notFound()` — nunca 403 — quando o usuário não é membro. Um 403
- * confirmaria que a organização existe.
+ * A organização vem SEMPRE da sessão, nunca de parâmetro do usuário. Quando
+ * o multiusuário voltar, o `idOrg` volta para a URL e os guards de membro
+ * voltam junto — aí a distinção passa a importar de novo.
  */
-
-/** Membro (qualquer papel) da organização. */
-export const requireMembroOrg = cache(async function requireMembroOrg(
-  idOrg: number
-) {
+export const organizacaoPessoal = cache(async function organizacaoPessoal() {
   const { conta } = await requireConta();
 
-  if (!Number.isInteger(idOrg) || idOrg <= 0) notFound();
-
-  const vinculo = await prisma.organizacaoMembro.findUnique({
-    where: { idOrganizacao_idConta: { idOrganizacao: idOrg, idConta: conta.id } },
+  const vinculo = await prisma.organizacaoMembro.findFirst({
+    where: { idConta: conta.id },
     include: { organizacao: true },
+    orderBy: { id: "asc" },
   });
 
-  if (!vinculo) notFound();
+  if (vinculo) return { conta, organizacao: vinculo.organizacao };
 
-  // Organização bloqueada comercialmente — nem o admin dela entra.
-  if (!vinculo.organizacao.ativa) notFound();
+  // Primeira visita: cria a organização junto com o vínculo, em transação —
+  // organização sem dono seria órfã e invisível para o superadmin.
+  const organizacao = await prisma.$transaction(async (tx) => {
+    const criada = await tx.organizacao.create({
+      data: {
+        nome: conta.nome ?? conta.email ?? `Conta ${conta.id}`,
+        codigoConvite: await gerarCodigoUnico(tx),
+      },
+    });
+    await tx.organizacaoMembro.create({
+      data: {
+        idOrganizacao: criada.id,
+        idConta: conta.id,
+        papel: "ADMIN",
+      },
+    });
+    return criada;
+  });
 
-  return { conta, organizacao: vinculo.organizacao, papel: vinculo.papel };
+  return { conta, organizacao };
 });
 
-/** Admin da organização. Membro comum recebe notFound(). */
-export const requireAdminOrg = cache(async function requireAdminOrg(
-  idOrg: number
-) {
-  const ctx = await requireMembroOrg(idOrg);
-  if (ctx.papel !== "ADMIN") notFound();
-  return ctx;
-});
-
-/**
- * Gera um código de convite que ainda não existe.
- *
- * Colisão em 32^6 é improvável, mas o campo é `@unique` — sem o retry, o
- * azar viraria erro na cara do usuário.
- */
-export async function gerarCodigoConviteUnico(): Promise<string> {
+/** Código único. Sobra do modelo de convite; volta a ter uso no multiusuário. */
+async function gerarCodigoUnico(
+  tx: Pick<typeof prisma, "organizacao">
+): Promise<string> {
   for (let i = 0; i < 10; i++) {
     const codigo = gerarCodigoConvite();
-    const existe = await prisma.organizacao.findUnique({
+    const existe = await tx.organizacao.findUnique({
       where: { codigoConvite: codigo },
       select: { id: true },
     });
     if (!existe) return codigo;
   }
-  throw new Error("Não foi possível gerar um código de convite único.");
-}
-
-/** Converte o parâmetro de rota em número, ou 404. */
-export function parseIdOrg(valor: string): number {
-  const n = Number(valor);
-  if (!Number.isInteger(n) || n <= 0) notFound();
-  return n;
+  throw new Error("Não foi possível gerar um código único.");
 }
