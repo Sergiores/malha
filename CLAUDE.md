@@ -147,6 +147,7 @@ src/middleware.ts             sessão (não autorização)
 | 3 | Organizações, membros, papéis | ✅ Concluída |
 | 4 | Painel do superadmin (contas, licenças, módulos) | ✅ Concluída |
 | 5 | `requireModulo()` + navegação por licença | ✅ Concluída |
+| — | Deploy em produção | ✅ No ar |
 | 6 | Calculadoras a partir das planilhas | Planejada |
 
 ### Fase 0 — o que já está pronto
@@ -295,6 +296,36 @@ Reativar a licença devolve o acesso e o card volta a ser link.
 Para criar outro: adicionar em `src/core/registry.ts` e rodar
 `npm run db:sync-modulos`. O slug é a chave estável (vai na URL e no
 `requireModulo()`) — trate como imutável.
+
+### Produção
+
+- **https://malha.personalgestor.com.br** — Netlify, certificado Let's Encrypt
+  (renova sozinho). Deploy automático a cada push em `main`.
+- URL alternativa: `glittering-cuchufli-7c77f3.netlify.app`
+- Repositório: `github.com/Sergiores/malha` (o remote usa
+  `https://Sergiores@github.com/...` porque o Windows guarda a credencial de
+  outra conta GitHub; sem o usuário na URL o push dá 403).
+- DNS do domínio fica na **Cloudflare**: CNAME `malha` →
+  `glittering-cuchufli-7c77f3.netlify.app`, com o proxy **desligado**
+  (DNS only). Com proxy ligado o Let's Encrypt não valida.
+
+⚠️ **Dev e produção usam o MESMO banco Supabase.** Enquanto não houver
+cliente pagando, tudo bem. Antes do primeiro, crie um segundo projeto
+Supabase para desenvolvimento — hoje um teste local mexe em dados reais e
+uma migration errada derruba o sistema de quem pagou.
+
+### Correção do Prisma na Netlify (não remova)
+
+As funções da Netlify rodam Amazon Linux + OpenSSL 3, e o Prisma carrega o
+engine por caminho em runtime — o tracer do Next não o enxerga. Sem as duas
+correções abaixo, **toda server action devolve 500**, inclusive as que nem
+tocam o banco (o módulo importa o client no topo):
+
+1. `binaryTargets = ["native", "rhel-openssl-3.0.x"]` em `schema.prisma`
+2. `outputFileTracingIncludes` em `next.config.ts` copiando
+   `node_modules/.prisma/client/**`
+
+Sintoma característico: middleware funciona, formulários morrem em silêncio.
 
 ### Dados do projeto Supabase (confirmados por teste)
 
