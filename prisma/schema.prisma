@@ -1,0 +1,21 @@
+// Malha — schema de dados
+//
+// Fase 0: apenas datasource/generator, para validar a conexão com o Supabase.
+// Os modelos (Conta, Organizacao, Modulo, Calculadora, OrganizacaoModulo,
+// LogAuditoria) entram na Fase 2.
+//
+// Convenções do projeto:
+//  - PKs Int com autoincrement (evita a conversão manual que BigInt exige
+//    ao serializar para JSON).
+//  - createdAt/updatedAt em todas as tabelas.
+//  - Índices em todas as FKs.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}

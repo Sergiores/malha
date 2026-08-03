@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node --version)",
+      "PowerShell(npm --version)",
+      "Bash(cd \"D:/Projetos/Bolicho/Bolicho\" && echo \"=== tailwind.config.ts ===\"; cat tailwind.config.ts; echo \"=== postcss.config.mjs ===\"; cat postcss.config.mjs; echo \"=== components.json ===\"; cat components.json; echo \"=== utils.ts ===\"; cat src/lib/utils.ts | head -20; echo \"=== tsconfig ===\"; cat tsconfig.json)",
+      "PowerShell(Set-Location \"D:\\\\Projetos\\\\PersonalMalha\"; git add -A 2>&1 | Select-Object -Last 3; git status --short | Select-Object -First 30; \"=== TOTAL ===\"; \\(git status --short | Measure-Object -Line\\).Lines)"
+    ]
+  }
+}
