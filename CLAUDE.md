@@ -437,6 +437,13 @@ mudarem, o motor divergiu da planilha que o engenheiro já valida na prática
   cliente não pode apagar laudos já emitidos.
 - **Filtros da consulta ficam na URL**, não em estado local: dá para mandar o
   link de uma consulta pronta e o botão voltar funciona.
+- **`/m/geral/clientes/[id]/analises` atravessa os módulos.** A carteira mora
+  no Geral, mas as análises são de dosagem, de granulometria, do que vier —
+  quem abre a ficha quer o histórico inteiro. Cada linha aponta para o
+  módulo da *própria análise* (`calculadora.modulo.slug`), e é lá que o
+  `requireModulo()` decide se a licença ainda vale. Montar o link com o slug
+  da URL atual mandaria a análise de dosagem para a rota do Geral e daria
+  404.
 - ⚠️ **O `<select>` do cliente é controlado.** Com `defaultValue` a escolha
   se perdia a cada recálculo — o React remonta o trecho quando o resultado
   aparece, e a análise era salva sem cliente. O bug só apareceu conferindo o

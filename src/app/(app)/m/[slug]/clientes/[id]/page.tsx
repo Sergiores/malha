@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireModulo } from "@/lib/modulo";
 import { contaComOrganizacao } from "@/lib/organizacao";
@@ -83,11 +83,17 @@ export default async function EditarClientePage({
 
       {cliente.analises.length > 0 && (
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <FileText className="h-5 w-5 text-muted-foreground" />
-              Análises deste cliente
+              Últimas análises
             </CardTitle>
+            <Link href={`${base}/${cliente.id}/analises`}>
+              <Button variant="outline" size="sm" className="varredura">
+                Ver todas
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </CardHeader>
           <CardContent className="divide-y p-0">
             {cliente.analises.map((a) => (

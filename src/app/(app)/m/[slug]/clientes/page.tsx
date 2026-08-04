@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CircleOff, Pencil, Plus, Power, Users } from "lucide-react";
+import { CircleOff, FileText, Pencil, Plus, Power, Users } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireModulo } from "@/lib/modulo";
@@ -177,8 +177,22 @@ export default async function ClientesPage({
                       </td>
                       <td className="px-4 py-2">
                         <div className="flex justify-end gap-1">
+                          {/* Só vira botão quando há o que mostrar — abrir
+                              uma lista vazia é caminho perdido. */}
+                          {c._count.analises > 0 && (
+                            <Link href={`${base}/${c.id}/analises`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title={`Ver as ${c._count.analises} análises de ${c.nome}`}
+                              >
+                                <FileText className="h-4 w-4" />
+                                Análises
+                              </Button>
+                            </Link>
+                          )}
                           <Link href={`${base}/${c.id}`}>
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" title="Editar cadastro">
                               <Pencil className="h-4 w-4" />
                             </Button>
                           </Link>
