@@ -4,6 +4,7 @@ import { ArrowLeft, FileText } from "lucide-react";
 import { requireModulo } from "@/lib/modulo";
 import { prisma } from "@/lib/prisma";
 import { contaComOrganizacao } from "@/lib/organizacao";
+import { clientesParaSelecao } from "@/lib/cliente";
 import { Button } from "@/components/ui/button";
 import { FormDosagem } from "./form-dosagem";
 
@@ -24,12 +25,15 @@ export default async function DosagemCaaPage({
   if (!calc || !calc.ativa || calc.idModulo !== modulo.id) notFound();
 
   const { organizacao } = await contaComOrganizacao();
-  const recentes = await prisma.analise.count({
-    where: {
-      idOrganizacao: organizacao.id,
-      calculadora: { idModulo: modulo.id },
-    },
-  });
+  const [recentes, clientes] = await Promise.all([
+    prisma.analise.count({
+      where: {
+        idOrganizacao: organizacao.id,
+        calculadora: { idModulo: modulo.id },
+      },
+    }),
+    clientesParaSelecao(),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -56,7 +60,7 @@ export default async function DosagemCaaPage({
         )}
       </div>
 
-      <FormDosagem />
+      <FormDosagem clientes={clientes} />
     </div>
   );
 }

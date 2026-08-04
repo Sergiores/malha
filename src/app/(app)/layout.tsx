@@ -3,6 +3,7 @@ import { Ruler, Shield, UserRound } from "lucide-react";
 import { requireConta } from "@/lib/auth";
 import { isSuperadmin } from "@/lib/superadmin";
 import { calculadorasPorModulo, meusModulos } from "@/lib/modulo";
+import { MODULOS_SEM_ANALISE } from "@/core/registry";
 import { sair } from "@/app/(auth)/actions";
 import { Button } from "@/components/ui/button";
 import { MenuModulos, type ItemMenu } from "@/components/menu-modulos";
@@ -29,14 +30,17 @@ export default async function AppLayout({
       liberado,
       situacao: m.situacao,
       // Sub-itens só de módulo liberado. As análises são específicas do
-      // módulo, então vivem aqui — não num menu global.
+      // módulo, então vivem aqui — não num menu global. Módulos que são só
+      // cadastro não ganham o item, senão a lista abriria sempre vazia.
       filhos: liberado
         ? [
             ...(calcs.get(m.slug) ?? []).map((c) => ({
               href: `/m/${m.slug}/${c.slug}`,
               rotulo: c.nome,
             })),
-            { href: `/m/${m.slug}/analises`, rotulo: "Análises" },
+            ...(MODULOS_SEM_ANALISE.includes(m.slug)
+              ? []
+              : [{ href: `/m/${m.slug}/analises`, rotulo: "Análises" }]),
           ]
         : [],
     };

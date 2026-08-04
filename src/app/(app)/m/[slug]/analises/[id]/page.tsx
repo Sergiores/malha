@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { contaComOrganizacao } from "@/lib/organizacao";
 import { requireModulo } from "@/lib/modulo";
 import { STATUS_INFO, dataHoraBr } from "@/lib/analise";
+import { formatarDocumento } from "@/lib/documento";
 import type { DosagemCaaResultado } from "@/core/calculators/dosagem-caa/calc";
 import type { DosagemCaaInput } from "@/core/calculators/dosagem-caa/schema";
 import type { GranulometriaResultado } from "@/core/calculators/granulometria-areias/calc";
@@ -38,6 +39,19 @@ export default async function LaudoPage({
     include: {
       calculadora: { select: { nome: true, slug: true } },
       conta: { select: { nome: true, email: true } },
+      cliente: {
+        select: {
+          id: true,
+          nome: true,
+          cpfCnpj: true,
+          endereco: true,
+          bairro: true,
+          cidade: true,
+          uf: true,
+          contato: true,
+          fone: true,
+        },
+      },
     },
   });
   if (!analise) notFound();
@@ -93,6 +107,45 @@ export default async function LaudoPage({
         status={analise.status}
         slugModulo={slug}
       />
+
+      {analise.cliente && (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+              Cliente
+            </p>
+            <p className="font-medium">
+              {analise.cliente.nome}
+              {analise.cliente.cpfCnpj && (
+                <span className="ml-2 font-normal text-muted-foreground">
+                  {formatarDocumento(analise.cliente.cpfCnpj)}
+                </span>
+              )}
+            </p>
+            {(analise.cliente.endereco ||
+              analise.cliente.cidade ||
+              analise.cliente.bairro) && (
+              <p className="text-sm text-muted-foreground">
+                {[
+                  analise.cliente.endereco,
+                  analise.cliente.bairro,
+                  analise.cliente.cidade &&
+                    `${analise.cliente.cidade}${analise.cliente.uf ? `/${analise.cliente.uf}` : ""}`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
+            {(analise.cliente.contato || analise.cliente.fone) && (
+              <p className="text-sm text-muted-foreground">
+                {[analise.cliente.contato, analise.cliente.fone]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Entradas — um laudo sem as premissas não é auditável */}
       {ehDosagem ? (

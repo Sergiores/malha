@@ -29,6 +29,23 @@ export type ModuloDef = {
 
 export const MODULOS: ModuloDef[] = [
   {
+    slug: "geral",
+    nome: "Geral",
+    descricao:
+      "Cadastros compartilhados por todos os módulos, como a carteira de clientes.",
+    calculadoras: [
+      {
+        // `Calculadora` é "o que se executa dentro do módulo" — um cadastro
+        // cabe nessa definição, e reaproveitar a tabela evita um segundo
+        // conceito de item de menu só para isto.
+        slug: "clientes",
+        nome: "Cadastro de Clientes",
+        descricao:
+          "Carteira de clientes da organização, usada para identificar as análises.",
+      },
+    ],
+  },
+  {
     slug: "estrutura-concreto",
     nome: "Estrutura de Concreto",
     descricao:
@@ -68,3 +85,10 @@ export const MODULOS: ModuloDef[] = [
 export function moduloPorSlug(slug: string): ModuloDef | undefined {
   return MODULOS.find((m) => m.slug === slug);
 }
+
+/**
+ * Módulos que não produzem `Analise` — são cadastros, não cálculos. O menu
+ * lateral usa isto para não oferecer "Análises" onde a lista sempre estaria
+ * vazia.
+ */
+export const MODULOS_SEM_ANALISE = ["geral"];

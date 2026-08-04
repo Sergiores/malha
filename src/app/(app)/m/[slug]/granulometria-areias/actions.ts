@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireModulo } from "@/lib/modulo";
 import { contaComOrganizacao } from "@/lib/organizacao";
+import { idClienteValido } from "@/lib/cliente";
 import {
   granulometriaSchema,
   PENEIRAS,
@@ -26,6 +27,8 @@ export type EstadoGranulometria =
       entradas: GranulometriaInput;
       resultado: GranulometriaResultado;
       sugestao: { teor: number; otimas: number };
+      /** Devolvido para o select não se perder ao recalcular. */
+      idCliente: number | null;
     }
   | { ok: false; error: string }
   | null;
@@ -58,6 +61,7 @@ export async function calcularGranul(
   formData: FormData
 ): Promise<EstadoGranulometria> {
   await requireModulo(MODULO);
+  const { organizacao } = await contaComOrganizacao();
 
   const parsed = granulometriaSchema.safeParse(lerFormulario(formData));
   if (!parsed.success) {
@@ -73,6 +77,10 @@ export async function calcularGranul(
     entradas: parsed.data,
     resultado: calcularGranulometria(parsed.data),
     sugestao: { teor: melhor.teor, otimas: melhor.otimas },
+    idCliente: await idClienteValido(
+      formData.get("idCliente"),
+      organizacao.id
+    ),
   };
 }
 
@@ -110,6 +118,10 @@ export async function salvarGranul(
       idOrganizacao: organizacao.id,
       idConta: conta.id,
       idCalculadora: calculadora.id,
+      idCliente: await idClienteValido(
+        formData.get("idCliente"),
+        organizacao.id
+      ),
       titulo: parsed.data.titulo?.trim() || "Granulometria sem título",
       observacao: parsed.data.observacao || null,
       status: "CONCLUIDA",

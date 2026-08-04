@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireModulo } from "@/lib/modulo";
 import { contaComOrganizacao } from "@/lib/organizacao";
+import { idClienteValido } from "@/lib/cliente";
 import {
   dosagemCaaSchema,
   type DosagemCaaInput,
@@ -19,7 +20,13 @@ const MODULO = "concreto-fresco-endurecido";
 const CALCULADORA = "dosagem-caa";
 
 export type EstadoCalculo =
-  | { ok: true; entradas: DosagemCaaInput; resultado: DosagemCaaResultado }
+  | {
+      ok: true;
+      entradas: DosagemCaaInput;
+      resultado: DosagemCaaResultado;
+      /** Devolvido para o select não se perder ao recalcular. */
+      idCliente: number | null;
+    }
   | { ok: false; error: string }
   | null;
 
@@ -50,6 +57,7 @@ export async function calcular(
 ): Promise<EstadoCalculo> {
   // Guard também na action: a página não é o único caminho até aqui.
   await requireModulo(MODULO);
+  const { organizacao } = await contaComOrganizacao();
 
   const parsed = dosagemCaaSchema.safeParse(lerFormulario(formData));
   if (!parsed.success) {
@@ -60,6 +68,10 @@ export async function calcular(
     ok: true,
     entradas: parsed.data,
     resultado: calcularDosagemCaa(parsed.data),
+    idCliente: await idClienteValido(
+      formData.get("idCliente"),
+      organizacao.id
+    ),
   };
 }
 
@@ -95,6 +107,10 @@ export async function salvarAnalise(
       idOrganizacao: organizacao.id,
       idConta: conta.id,
       idCalculadora: calculadora.id,
+      idCliente: await idClienteValido(
+        formData.get("idCliente"),
+        organizacao.id
+      ),
       titulo: parsed.data.titulo?.trim() || "Dosagem CAA sem título",
       observacao: parsed.data.observacao || null,
       status: "CONCLUIDA",

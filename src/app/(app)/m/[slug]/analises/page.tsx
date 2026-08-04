@@ -36,7 +36,10 @@ export default async function AnalisesDoModuloPage({
         calculadora: { idModulo: modulo.id },
       },
       orderBy: { createdAt: "desc" },
-      include: { calculadora: { select: { nome: true } } },
+      include: {
+        calculadora: { select: { nome: true } },
+        cliente: { select: { nome: true } },
+      },
       take: 200,
     }),
     prisma.calculadora.findMany({
@@ -86,6 +89,7 @@ export default async function AnalisesDoModuloPage({
                 <thead>
                   <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <th className="px-4 py-2 font-medium">Título</th>
+                    <th className="px-4 py-2 font-medium">Cliente</th>
                     <th className="px-4 py-2 font-medium">Calculadora</th>
                     <th className="px-4 py-2 font-medium">Data</th>
                     <th className="px-4 py-2 text-right font-medium">
@@ -110,6 +114,9 @@ export default async function AnalisesDoModuloPage({
                           >
                             {a.titulo}
                           </Link>
+                        </td>
+                        <td className="px-4 py-2 text-muted-foreground">
+                          {a.cliente?.nome ?? "—"}
                         </td>
                         <td className="px-4 py-2 text-muted-foreground">
                           {a.calculadora.nome}

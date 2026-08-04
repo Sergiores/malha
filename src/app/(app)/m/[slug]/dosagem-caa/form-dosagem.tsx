@@ -5,6 +5,10 @@ import { AlertCircle, Calculator, Save } from "lucide-react";
 import { calcular, salvarAnalise, type EstadoCalculo } from "./actions";
 import { PADRAO } from "@/core/calculators/dosagem-caa/schema";
 import { ResultadoDosagem } from "@/components/resultado-dosagem";
+import {
+  SeletorCliente,
+  type ClienteOpcao,
+} from "@/components/seletor-cliente";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
@@ -42,7 +46,7 @@ const PRECOS: Campo[] = [
   { nome: "precoAditivo", rotulo: "Aditivo", unidade: "R$/kg", passo: "0.01" },
 ];
 
-export function FormDosagem() {
+export function FormDosagem({ clientes }: { clientes: ClienteOpcao[] }) {
   const [estado, acaoCalcular] = useActionState<EstadoCalculo, FormData>(
     calcular,
     null
@@ -90,6 +94,11 @@ export function FormDosagem() {
             </div>
           </CardContent>
         </Card>
+
+        <SeletorCliente
+          clientes={clientes}
+          idSelecionado={estado?.ok ? estado.idCliente : null}
+        />
 
         <Card>
           <CardHeader className="pb-3">

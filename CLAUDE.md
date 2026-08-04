@@ -370,9 +370,36 @@ mudarem, o motor divergiu da planilha que o engenheiro já valida na prática
 - O laudo escolhe o corpo pelo **slug da calculadora** — cada uma tem seu
   formato de resultado, e não há um schema único para todas.
 
+### Módulo Geral e Clientes — decisões
+
+- **`Geral` é módulo base**: liberado automaticamente na criação da
+  organização (`MODULOS_BASE` em `src/lib/organizacao.ts`) e sem prazo. Sem
+  a carteira de clientes as análises perdem a identificação, então travar
+  isso atrás de licença criaria um impasse. O superadmin ainda pode revogar.
+  Para organizações antigas: `npm run db:liberar-base`.
+- **O cadastro entra como `Calculadora`** — a tabela é "o que se executa
+  dentro do módulo", e um cadastro cabe nisso. Evita um segundo conceito de
+  item de menu. `MODULOS_SEM_ANALISE` no registry impede que o menu ofereça
+  "Análises" num módulo que só tem cadastro.
+- **CPF/CNPJ guardado só com dígitos**, com validação dos dígitos
+  verificadores (`src/lib/documento.ts`). Guardar com máscara faria a mesma
+  empresa entrar duas vezes na carteira. A busca também tira a máscara, então
+  "12.345" encontra "12345…".
+- **Unique é `(organizacao, cpfCnpj)`**, não global: duas empresas podem ter
+  o mesmo cliente em suas carteiras.
+- **`Analise.idCliente` é opcional e `onDelete: SetNull`** — excluir um
+  cliente não pode apagar laudos já emitidos.
+- **Filtros da consulta ficam na URL**, não em estado local: dá para mandar o
+  link de uma consulta pronta e o botão voltar funciona.
+- ⚠️ **O `<select>` do cliente é controlado.** Com `defaultValue` a escolha
+  se perdia a cada recálculo — o React remonta o trecho quando o resultado
+  aparece, e a análise era salva sem cliente. O bug só apareceu conferindo o
+  banco; a tela não acusava nada.
+
 ### Módulos ativos
 
-`estrutura-concreto` · `estrutura-metalica` · `concreto-fresco-endurecido`
+`geral` (base) · `estrutura-concreto` · `estrutura-metalica` ·
+`concreto-fresco-endurecido`
 
 Para criar outro: adicionar em `src/core/registry.ts` e rodar
 `npm run db:sync-modulos`. O slug é a chave estável (vai na URL e no

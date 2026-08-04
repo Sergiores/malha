@@ -98,6 +98,9 @@ async function criarContaEOrganizacao(
   return { user: user!, conta, organizacao };
 }
 
+/** Módulos que toda organização recebe ao nascer, sem prazo. */
+const MODULOS_BASE = ["geral"];
+
 async function criarOrganizacaoPara(idConta: number, nome: string | null) {
   // Transação: organização sem dono seria órfã e invisível no painel.
   return prisma.$transaction(async (tx) => {
@@ -110,6 +113,33 @@ async function criarOrganizacaoPara(idConta: number, nome: string | null) {
     await tx.organizacaoMembro.create({
       data: { idOrganizacao: criada.id, idConta, papel: "ADMIN" },
     });
+
+    // "Geral" é infraestrutura, não produto: sem a carteira de clientes as
+    // análises perdem a identificação. Vem liberado e sem prazo — o
+    // superadmin ainda pode revogar se quiser.
+    const base = await tx.modulo.findMany({
+      where: { slug: { in: MODULOS_BASE }, ativo: true },
+      select: { id: true },
+    });
+    const hoje = new Date();
+    for (const m of base) {
+      await tx.organizacaoModulo.create({
+        data: {
+          idOrganizacao: criada.id,
+          idModulo: m.id,
+          validoDe: new Date(
+            Date.UTC(
+              hoje.getUTCFullYear(),
+              hoje.getUTCMonth(),
+              hoje.getUTCDate()
+            )
+          ),
+          validoAte: null,
+          observacao: "Módulo base, liberado na criação da organização",
+        },
+      });
+    }
+
     return criada;
   });
 }

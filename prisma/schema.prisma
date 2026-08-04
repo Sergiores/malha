@@ -83,6 +83,7 @@ model Organizacao {
   membros  OrganizacaoMembro[]
   modulos  OrganizacaoModulo[]
   analises Analise[]
+  clientes Cliente[]
 
   @@map("organizacao")
 }
@@ -161,6 +162,45 @@ model Calculadora {
 }
 
 // ------------------------------------------------------------------
+// Cliente — para quem o serviço é prestado
+// ------------------------------------------------------------------
+// Pertence à organização: cada assinante enxerga só a própria carteira.
+// O documento fica guardado só com dígitos (`cpfCnpj`), sem máscara — é o
+// que permite buscar por "12345678000190" ou "12.345.678/0001-90" sem
+// depender de como foi digitado.
+model Cliente {
+  id            Int @id @default(autoincrement())
+  idOrganizacao Int @map("id_organizacao")
+
+  nome     String
+  cpfCnpj  String? @map("cpf_cnpj")
+  endereco String?
+  bairro   String?
+  cidade   String?
+  uf       String? @db.VarChar(2)
+  cep      String? @db.VarChar(8)
+  fone     String?
+  email    String?
+  contato  String?
+
+  // Soft-delete: análises antigas continuam apontando para o cliente.
+  ativo Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organizacao Organizacao @relation(fields: [idOrganizacao], references: [id], onDelete: Cascade)
+  analises    Analise[]
+
+  // Documento único dentro da organização, não globalmente: duas empresas
+  // podem ter o mesmo cliente em suas carteiras.
+  @@unique([idOrganizacao, cpfCnpj])
+  @@index([idOrganizacao, nome])
+  @@index([idOrganizacao, cidade])
+  @@map("cliente")
+}
+
+// ------------------------------------------------------------------
 // Analise — um cálculo executado e guardado
 // ------------------------------------------------------------------
 // Entradas e resultados vão em Json de propósito: cada calculadora tem o
@@ -172,10 +212,13 @@ model Calculadora {
 // de continuar mostrando os mesmos números em dezembro, mesmo que os preços
 // de insumo ou a própria fórmula mudem no meio.
 model Analise {
-  id            Int @id @default(autoincrement())
-  idOrganizacao Int @map("id_organizacao")
-  idConta       Int @map("id_conta")
-  idCalculadora Int @map("id_calculadora")
+  id            Int  @id @default(autoincrement())
+  idOrganizacao Int  @map("id_organizacao")
+  idConta       Int  @map("id_conta")
+  idCalculadora Int  @map("id_calculadora")
+  // Opcional: a calculadora funciona sem cliente, e o módulo Geral pode não
+  // estar licenciado. Vincular depois não perde nada.
+  idCliente     Int? @map("id_cliente")
 
   titulo     String
   status     StatusAnalise @default(RASCUNHO)
@@ -189,7 +232,11 @@ model Analise {
   organizacao Organizacao @relation(fields: [idOrganizacao], references: [id], onDelete: Cascade)
   conta       Conta       @relation(fields: [idConta], references: [id], onDelete: Cascade)
   calculadora Calculadora @relation(fields: [idCalculadora], references: [id], onDelete: Restrict)
+  // SetNull, não Cascade: excluir um cliente não pode apagar os laudos que
+  // já foram emitidos para ele.
+  cliente     Cliente?    @relation(fields: [idCliente], references: [id], onDelete: SetNull)
 
+  @@index([idCliente])
   @@index([idOrganizacao, createdAt])
   @@index([idConta])
   @@index([idCalculadora])

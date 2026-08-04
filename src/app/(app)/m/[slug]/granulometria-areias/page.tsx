@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { requireModulo } from "@/lib/modulo";
 import { prisma } from "@/lib/prisma";
+import { clientesParaSelecao } from "@/lib/cliente";
 import { Button } from "@/components/ui/button";
 import { FormGranulometria } from "./form-granulometria";
 
@@ -22,6 +23,8 @@ export default async function GranulometriaPage({
   });
   if (!calc || !calc.ativa || calc.idModulo !== modulo.id) notFound();
 
+  const clientes = await clientesParaSelecao();
+
   return (
     <div className="space-y-4">
       <div>
@@ -35,7 +38,7 @@ export default async function GranulometriaPage({
         <p className="max-w-2xl text-muted-foreground">{calc.descricao}</p>
       </div>
 
-      <FormGranulometria />
+      <FormGranulometria clientes={clientes} />
     </div>
   );
 }

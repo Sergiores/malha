@@ -12,6 +12,10 @@ import {
   PENEIRAS,
 } from "@/core/calculators/granulometria-areias/schema";
 import { ResultadoGranulometria } from "@/components/resultado-granulometria";
+import {
+  SeletorCliente,
+  type ClienteOpcao,
+} from "@/components/seletor-cliente";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -24,7 +28,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export function FormGranulometria() {
+export function FormGranulometria({
+  clientes,
+}: {
+  clientes: ClienteOpcao[];
+}) {
   const [estado, acaoCalcular] = useActionState<EstadoGranulometria, FormData>(
     calcularGranul,
     null
@@ -71,6 +79,11 @@ export function FormGranulometria() {
             </div>
           </CardContent>
         </Card>
+
+        <SeletorCliente
+          clientes={clientes}
+          idSelecionado={estado?.ok ? estado.idCliente : null}
+        />
 
         <Card>
           <CardHeader className="pb-3">
