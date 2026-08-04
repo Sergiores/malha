@@ -351,6 +351,25 @@ mudarem, o motor divergiu da planilha que o engenheiro já valida na prática
 - **Laudo em PDF pela impressão do navegador** (`@media print` em
   `globals.css`), sem biblioteca de geração no servidor.
 
+### Granulometria de Areias — decisões
+
+- **Peneiras têm dois atributos independentes**: `serieNormal` (entra no
+  módulo de finura) e `temLimite` (tem zona na NBR 7211). A 6,3 mm tem
+  limite mas não entra no MF; abaixo de 0,15 mm não há zona normativa, e
+  essas peneiras aparecem na curva sem enquadrar nem reprovar. Confundir os
+  dois é o erro clássico ao portar esse cálculo.
+- **Curva com eixo Y invertido e X logarítmico** — é a convenção do ensaio.
+  Desenhada linear e crescente, fica irreconhecível para um engenheiro.
+- **`melhorTeor()` varre de 0 a 100%** e sugere o teor de mistura com melhor
+  enquadramento. Era o que a planilha obrigava a fazer por tentativa manual.
+- **MF da mescla dá 2,46**, não os 2,39 exibidos na planilha. A própria
+  coluna Mescla da planilha leva a 2,46:
+  `(0 + 1,2 + 9,4 + 25,1 + 41,1 + 73,7 + 95,7)/100`, e a média ponderada
+  confirma: `0,10 × 0,76 + 0,90 × 2,65`. Adotado o valor normativo; se a
+  planilha estiver certa, o teste de paridade é que vai acusar.
+- O laudo escolhe o corpo pelo **slug da calculadora** — cada uma tem seu
+  formato de resultado, e não há um schema único para todas.
+
 ### Módulos ativos
 
 `estrutura-concreto` · `estrutura-metalica` · `concreto-fresco-endurecido`

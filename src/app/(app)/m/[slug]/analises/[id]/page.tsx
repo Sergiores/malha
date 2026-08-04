@@ -7,7 +7,10 @@ import { requireModulo } from "@/lib/modulo";
 import { STATUS_INFO, dataHoraBr } from "@/lib/analise";
 import type { DosagemCaaResultado } from "@/core/calculators/dosagem-caa/calc";
 import type { DosagemCaaInput } from "@/core/calculators/dosagem-caa/schema";
+import type { GranulometriaResultado } from "@/core/calculators/granulometria-areias/calc";
+import type { GranulometriaInput } from "@/core/calculators/granulometria-areias/schema";
 import { ResultadoDosagem } from "@/components/resultado-dosagem";
+import { ResultadoGranulometria } from "@/components/resultado-granulometria";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AcoesAnalise } from "./acoes-analise";
@@ -33,17 +36,18 @@ export default async function LaudoPage({
       calculadora: { idModulo: modulo.id },
     },
     include: {
-      calculadora: { select: { nome: true } },
+      calculadora: { select: { nome: true, slug: true } },
       conta: { select: { nome: true, email: true } },
     },
   });
   if (!analise) notFound();
 
-  // Snapshot: exibimos o que foi gravado, não um recálculo. Um laudo emitido
-  // em março tem de mostrar os mesmos números em dezembro.
-  const r = analise.resultados as unknown as DosagemCaaResultado;
-  const e = analise.entradas as unknown as DosagemCaaInput;
   const s = STATUS_INFO[analise.status];
+  // Snapshot: exibimos o que foi gravado, não um recálculo. Um laudo emitido
+  // em março tem de mostrar os mesmos números em dezembro. Por isso o corpo
+  // do laudo é escolhido pelo slug da calculadora, e não por um formato
+  // único de resultado.
+  const ehDosagem = analise.calculadora.slug === "dosagem-caa";
 
   return (
     <div className="space-y-4">
@@ -91,21 +95,25 @@ export default async function LaudoPage({
       />
 
       {/* Entradas — um laudo sem as premissas não é auditável */}
-      <Card>
-        <CardContent className="grid gap-x-6 gap-y-2 pt-6 sm:grid-cols-2 lg:grid-cols-3">
-          <Premissa rotulo="Consumo de cimento" valor={`${e.cimento} kg/m³`} />
-          <Premissa rotulo="Fator a/c" valor={String(e.fatorAC)} />
-          <Premissa rotulo="Teor de argamassa" valor={`${e.teorArgamassa}%`} />
-          <Premissa rotulo="Teor de fíler" valor={`${e.teorFiler}%`} />
-          <Premissa rotulo="Teor de aditivo" valor={`${e.teorAditivo}%`} />
-          <Premissa
-            rotulo="Massa específica"
-            valor={`${e.massaEspecifica} kg/m³`}
-          />
-        </CardContent>
-      </Card>
+      {ehDosagem ? (
+        <PremissasDosagem
+          e={analise.entradas as unknown as DosagemCaaInput}
+        />
+      ) : (
+        <PremissasGranulometria
+          e={analise.entradas as unknown as GranulometriaInput}
+        />
+      )}
 
-      <ResultadoDosagem r={r} />
+      {ehDosagem ? (
+        <ResultadoDosagem
+          r={analise.resultados as unknown as DosagemCaaResultado}
+        />
+      ) : (
+        <ResultadoGranulometria
+          r={analise.resultados as unknown as GranulometriaResultado}
+        />
+      )}
 
       <p className="pt-4 text-xs text-muted-foreground">
         Documento gerado pelo Malha a partir das premissas registradas nesta
@@ -114,6 +122,39 @@ export default async function LaudoPage({
         responsabilidade técnica são do engenheiro responsável.
       </p>
     </div>
+  );
+}
+
+function PremissasDosagem({ e }: { e: DosagemCaaInput }) {
+  return (
+    <Card>
+      <CardContent className="grid gap-x-6 gap-y-2 pt-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Premissa rotulo="Consumo de cimento" valor={`${e.cimento} kg/m³`} />
+        <Premissa rotulo="Fator a/c" valor={String(e.fatorAC)} />
+        <Premissa rotulo="Teor de argamassa" valor={`${e.teorArgamassa}%`} />
+        <Premissa rotulo="Teor de fíler" valor={`${e.teorFiler}%`} />
+        <Premissa rotulo="Teor de aditivo" valor={`${e.teorAditivo}%`} />
+        <Premissa
+          rotulo="Massa específica"
+          valor={`${e.massaEspecifica} kg/m³`}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function PremissasGranulometria({ e }: { e: GranulometriaInput }) {
+  return (
+    <Card>
+      <CardContent className="grid gap-x-6 gap-y-2 pt-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Premissa rotulo="Areia A" valor={e.nomeAreiaA} />
+        <Premissa rotulo="Areia B" valor={e.nomeAreiaB} />
+        <Premissa
+          rotulo="Teor de mistura"
+          valor={`${e.teorMistura}% / ${100 - e.teorMistura}%`}
+        />
+      </CardContent>
+    </Card>
   );
 }
 

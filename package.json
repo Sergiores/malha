@@ -14,7 +14,7 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:sync-modulos": "tsx prisma/sync-modulos.ts",
-    "verificar:calculos": "tsx src/core/calculators/dosagem-caa/verificar.ts"
+    "verificar:calculos": "tsx src/core/calculators/dosagem-caa/verificar.ts && tsx src/core/calculators/granulometria-areias/verificar.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

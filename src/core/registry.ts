@@ -54,6 +54,12 @@ export const MODULOS: ModuloDef[] = [
         descricao:
           "Concreto autoadensável pelo método Tutikian: traço unitário, consumo por m³ e composição de custo.",
       },
+      {
+        slug: "granulometria-areias",
+        nome: "Granulometria de Areias",
+        descricao:
+          "Mistura de duas areias com curva granulométrica e enquadramento nas zonas da NBR 7211.",
+      },
     ],
   },
 ];
