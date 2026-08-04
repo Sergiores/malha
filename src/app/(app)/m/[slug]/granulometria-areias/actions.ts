@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireModulo } from "@/lib/modulo";
 import { contaComOrganizacao } from "@/lib/organizacao";
 import { idClienteValido } from "@/lib/cliente";
+import { gravarAnalise } from "@/lib/analise-comum";
 import {
   granulometriaSchema,
   PENEIRAS,
@@ -107,30 +108,16 @@ export async function salvarGranul(
 
   const resultado = calcularGranulometria(parsed.data);
 
-  const calculadora = await prisma.calculadora.findUnique({
-    where: { slug: CALCULADORA },
-    select: { id: true },
+  const r = await gravarAnalise({
+    formData,
+    slugCalculadora: CALCULADORA,
+    tituloPadrao: "Granulometria sem título",
+    entradas: parsed.data,
+    resultados: resultado,
   });
-  if (!calculadora) return { ok: false, error: "Calculadora não encontrada." };
-
-  const analise = await prisma.analise.create({
-    data: {
-      idOrganizacao: organizacao.id,
-      idConta: conta.id,
-      idCalculadora: calculadora.id,
-      idCliente: await idClienteValido(
-        formData.get("idCliente"),
-        organizacao.id
-      ),
-      titulo: parsed.data.titulo?.trim() || "Granulometria sem título",
-      observacao: parsed.data.observacao || null,
-      status: "CONCLUIDA",
-      entradas: parsed.data as unknown as Prisma.InputJsonValue,
-      resultados: resultado as unknown as Prisma.InputJsonValue,
-    },
-  });
+  if (!r.ok) return { ok: false, error: r.error };
 
   revalidatePath(`/m/${MODULO}/analises`);
   revalidatePath("/dashboard");
-  redirect(`/m/${MODULO}/analises/${analise.id}`);
+  redirect(`/m/${MODULO}/analises/${r.id}`);
 }

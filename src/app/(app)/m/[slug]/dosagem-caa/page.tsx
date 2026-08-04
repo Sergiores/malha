@@ -5,13 +5,16 @@ import { requireModulo } from "@/lib/modulo";
 import { prisma } from "@/lib/prisma";
 import { contaComOrganizacao } from "@/lib/organizacao";
 import { clientesParaSelecao } from "@/lib/cliente";
+import { carregarParaFormulario } from "@/lib/carregar-para-form";
 import { Button } from "@/components/ui/button";
 import { FormDosagem } from "./form-dosagem";
 
 export default async function DosagemCaaPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ editar?: string; copiar?: string }>;
 }) {
   const { slug } = await params;
   const { modulo } = await requireModulo(slug);
@@ -23,6 +26,8 @@ export default async function DosagemCaaPage({
     select: { idModulo: true, nome: true, descricao: true, ativa: true },
   });
   if (!calc || !calc.ativa || calc.idModulo !== modulo.id) notFound();
+
+  const pre = await carregarParaFormulario(await searchParams, "dosagem-caa");
 
   const { organizacao } = await contaComOrganizacao();
   const [recentes, clientes] = await Promise.all([
@@ -60,7 +65,14 @@ export default async function DosagemCaaPage({
         )}
       </div>
 
-      <FormDosagem clientes={clientes} />
+      <FormDosagem
+        clientes={clientes}
+        modo={pre?.modo}
+        iniciais={pre?.iniciais}
+        idClienteInicial={pre?.idCliente}
+        parecerInicial={pre?.parecer}
+        validadeInicial={pre?.validoAte}
+      />
     </div>
   );
 }

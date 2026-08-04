@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireModulo } from "@/lib/modulo";
 import { contaComOrganizacao } from "@/lib/organizacao";
 import { idClienteValido } from "@/lib/cliente";
+import { gravarAnalise } from "@/lib/analise-comum";
 import {
   dosagemCaaSchema,
   type DosagemCaaInput,
@@ -96,32 +97,18 @@ export async function salvarAnalise(
 
   const resultado = calcularDosagemCaa(parsed.data);
 
-  const calculadora = await prisma.calculadora.findUnique({
-    where: { slug: CALCULADORA },
-    select: { id: true },
+  const r = await gravarAnalise({
+    formData,
+    slugCalculadora: CALCULADORA,
+    tituloPadrao: "Dosagem CAA sem título",
+    entradas: parsed.data,
+    resultados: resultado,
   });
-  if (!calculadora) return { ok: false, error: "Calculadora não encontrada." };
-
-  const analise = await prisma.analise.create({
-    data: {
-      idOrganizacao: organizacao.id,
-      idConta: conta.id,
-      idCalculadora: calculadora.id,
-      idCliente: await idClienteValido(
-        formData.get("idCliente"),
-        organizacao.id
-      ),
-      titulo: parsed.data.titulo?.trim() || "Dosagem CAA sem título",
-      observacao: parsed.data.observacao || null,
-      status: "CONCLUIDA",
-      entradas: parsed.data as unknown as Prisma.InputJsonValue,
-      resultados: resultado as unknown as Prisma.InputJsonValue,
-    },
-  });
+  if (!r.ok) return { ok: false, error: r.error };
 
   revalidatePath(`/m/${MODULO}/analises`);
   revalidatePath("/dashboard");
-  redirect(`/m/${MODULO}/analises/${analise.id}`);
+  redirect(`/m/${MODULO}/analises/${r.id}`);
 }
 
 const STATUS_VALIDOS: StatusAnalise[] = [
@@ -144,11 +131,19 @@ export async function alterarStatus(formData: FormData): Promise<void> {
   const status = String(formData.get("status")) as StatusAnalise;
   if (!Number.isInteger(id) || !STATUS_VALIDOS.includes(status)) return;
 
+  // A data de aprovação é carimbada pelo sistema, nunca digitada — é o que
+  // dá fé à data no laudo. Sair de APROVADA a limpa: manter o carimbo de uma
+  // aprovação desfeita seria mentira no documento.
+  const data =
+    status === "APROVADA"
+      ? { status, aprovadaEm: new Date() }
+      : { status, aprovadaEm: null };
+
   // O filtro por organização é o que impede alterar análise de outro cliente
   // passando um id qualquer no formulário.
   await prisma.analise.updateMany({
     where: { id, idOrganizacao: organizacao.id },
-    data: { status },
+    data,
   });
 
   const slug = slugSeguro(formData);

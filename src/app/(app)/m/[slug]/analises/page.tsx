@@ -2,8 +2,9 @@ import Link from "next/link";
 import { FileText, Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { contaComOrganizacao } from "@/lib/organizacao";
-import { requireModulo } from "@/lib/modulo";
+import { requireModulo, hojeUtc } from "@/lib/modulo";
 import { STATUS_INFO, brl, dataHoraBr } from "@/lib/analise";
+import { dataBr } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -48,6 +49,8 @@ export default async function AnalisesDoModuloPage({
       select: { slug: true, nome: true },
     }),
   ]);
+
+  const hoje = hojeUtc();
 
   return (
     <div className="space-y-4">
@@ -95,6 +98,7 @@ export default async function AnalisesDoModuloPage({
                     <th className="px-4 py-2 text-right font-medium">
                       Custo/m³
                     </th>
+                    <th className="px-4 py-2 font-medium">Validade</th>
                     <th className="px-4 py-2 font-medium">Status</th>
                   </tr>
                 </thead>
@@ -102,6 +106,8 @@ export default async function AnalisesDoModuloPage({
                   {analises.map((a) => {
                     const r = a.resultados as ResumoResultado | null;
                     const s = STATUS_INFO[a.status];
+                    const vencido =
+                      a.validoAte !== null && a.validoAte < hoje;
                     return (
                       <tr
                         key={a.id}
@@ -128,6 +134,15 @@ export default async function AnalisesDoModuloPage({
                           {typeof r?.custoTotal === "number"
                             ? brl(r.custoTotal)
                             : "—"}
+                        </td>
+                        <td
+                          className={`px-4 py-2 tabular-nums ${
+                            vencido
+                              ? "font-medium text-destructive"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {a.validoAte ? dataBr(a.validoAte) : "—"}
                         </td>
                         <td className="px-4 py-2">
                           <span

@@ -442,6 +442,31 @@ mudarem, o motor divergiu da planilha que o engenheiro já valida na prática
   aparece, e a análise era salva sem cliente. O bug só apareceu conferindo o
   banco; a tela não acusava nada.
 
+### Ciclo de vida da análise — decisões
+
+- **Só `RASCUNHO` aceita alteração.** A regra mora em `gravarAnalise()`
+  (`src/lib/analise-comum.ts`), no servidor, e não no botão: o `editarId`
+  vem do HTML e não é confiável. Concluída ou aprovada, a análise vira
+  laudo — e laudo emitido não se reescreve, se copia.
+- **Copiar funciona em qualquer status** e sempre cria registro novo
+  (`?copiar=<id>`), com o original intacto. É o caminho para revisar valores
+  ou trocar o cliente depois que o laudo fechou.
+- **O parecer não é copiado.** Ele é a leitura de um resultado específico;
+  arrastá-lo para outra análise convidaria a assinar uma conclusão que
+  ninguém releu. Título ganha "(cópia)", validade volta a vazio.
+- **`aprovadaEm` é carimbo do servidor**, gravado por `alterarStatus` quando
+  o status vira `APROVADA` e zerado quando sai. Não existe campo de data de
+  aprovação no formulário — seria data declarada, não registrada.
+- **`validoAte` é `@db.Date`**, gravada por `dataUtc()`, mesma defesa de fuso
+  das licenças. Vencida aparece em vermelho no laudo e na lista.
+- **WhatsApp só de análise aprovada**, e manda **texto, não link**: o laudo
+  completo exige login, e mandar URL que o cliente não abre é pior que não
+  mandar. `src/lib/whatsapp.ts` monta o resumo (traço/consumo/custo, ou
+  MF/enquadramento) e diz explicitamente que a conferência formal é o PDF.
+- ⚠️ **Parecer e validade são campos controlados**, pelo mesmo motivo do
+  `<select>` de cliente: o botão "Calcular" reenvia o formulário, e perder um
+  parecer longo num recálculo seria o pior defeito possível desse campo.
+
 ### Módulos ativos
 
 `geral` (base) · `estrutura-concreto` · `estrutura-metalica` ·

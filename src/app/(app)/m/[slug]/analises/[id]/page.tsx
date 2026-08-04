@@ -1,11 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Ruler } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarClock,
+  CheckCircle2,
+  Pencil,
+  PenLine,
+  Ruler,
+} from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { contaComOrganizacao } from "@/lib/organizacao";
-import { requireModulo } from "@/lib/modulo";
+import { requireModulo, hojeUtc } from "@/lib/modulo";
 import { STATUS_INFO, dataHoraBr } from "@/lib/analise";
 import { formatarDocumento } from "@/lib/documento";
+import { dataBr } from "@/lib/utils";
+import { linkWhatsApp, textoWhatsApp } from "@/lib/whatsapp";
 import type { DosagemCaaResultado } from "@/core/calculators/dosagem-caa/calc";
 import type { DosagemCaaInput } from "@/core/calculators/dosagem-caa/schema";
 import type { GranulometriaResultado } from "@/core/calculators/granulometria-areias/calc";
@@ -63,6 +72,28 @@ export default async function LaudoPage({
   // único de resultado.
   const ehDosagem = analise.calculadora.slug === "dosagem-caa";
 
+  // Envio por WhatsApp só de análise aprovada — o que circula por mensagem
+  // costuma virar decisão de obra, e rascunho não deve virar.
+  const linkZap =
+    analise.status === "APROVADA"
+      ? linkWhatsApp(
+          textoWhatsApp({
+            id: analise.id,
+            titulo: analise.titulo,
+            calculadoraSlug: analise.calculadora.slug,
+            calculadoraNome: analise.calculadora.nome,
+            clienteNome: analise.cliente?.nome ?? null,
+            parecer: analise.parecer,
+            validoAte: analise.validoAte,
+            aprovadaEm: analise.aprovadaEm,
+            resultados: analise.resultados,
+          })
+        )
+      : null;
+
+  const vencido =
+    analise.validoAte !== null && analise.validoAte < hojeUtc();
+
   return (
     <div className="space-y-4">
       <div className="print:hidden">
@@ -100,12 +131,43 @@ export default async function LaudoPage({
             {analise.observacao}
           </p>
         )}
+
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          {analise.aprovadaEm && (
+            <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+              <CheckCircle2 className="h-4 w-4" />
+              Aprovada em {dataHoraBr(analise.aprovadaEm)}
+            </span>
+          )}
+          {analise.validoAte && (
+            <span
+              className={`flex items-center gap-1.5 ${
+                vencido
+                  ? "font-medium text-destructive"
+                  : "text-muted-foreground"
+              }`}
+            >
+              <CalendarClock className="h-4 w-4" />
+              {vencido ? "Venceu" : "Válida até"} {dataBr(analise.validoAte)}
+            </span>
+          )}
+        </div>
       </div>
+
+      {analise.status === "RASCUNHO" && (
+        <p className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-800 print:hidden dark:text-amber-300">
+          <Pencil className="mt-0.5 h-4 w-4 shrink-0" />
+          Rascunho — ainda pode ser alterado. Ao concluir ou aprovar, os
+          valores ficam travados e novas versões passam a ser feitas por cópia.
+        </p>
+      )}
 
       <AcoesAnalise
         id={analise.id}
         status={analise.status}
         slugModulo={slug}
+        slugCalculadora={analise.calculadora.slug}
+        linkZap={linkZap}
       />
 
       {analise.cliente && (
@@ -168,11 +230,35 @@ export default async function LaudoPage({
         />
       )}
 
+      {analise.parecer && (
+        <Card className="card-tec border-primary/30">
+          <CardContent className="pt-6">
+            <p className="mb-2 flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.12em] text-primary">
+              <PenLine className="h-3.5 w-3.5" />
+              Parecer técnico
+            </p>
+            {/* whitespace-pre-line preserva os parágrafos que o engenheiro
+                escreveu — o parecer é texto corrido, não um campo curto. */}
+            <p className="whitespace-pre-line text-sm leading-relaxed">
+              {analise.parecer}
+            </p>
+            <p className="mt-4 border-t pt-3 text-xs text-muted-foreground">
+              {analise.conta.nome ?? analise.conta.email}
+              {analise.aprovadaEm &&
+                ` · aprovado em ${dataHoraBr(analise.aprovadaEm)}`}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <p className="pt-4 text-xs text-muted-foreground">
         Documento gerado pelo Malha a partir das premissas registradas nesta
         análise. Os valores refletem o momento do cálculo e não são
-        recalculados na exibição. A conferência do resultado e a
-        responsabilidade técnica são do engenheiro responsável.
+        recalculados na exibição.
+        {analise.validoAte &&
+          ` Válido até ${dataBr(analise.validoAte)} — após essa data, refaça a análise com os materiais em uso.`}{" "}
+        A conferência do resultado e a responsabilidade técnica são do
+        engenheiro responsável.
       </p>
     </div>
   );

@@ -16,6 +16,11 @@ import {
   SeletorCliente,
   type ClienteOpcao,
 } from "@/components/seletor-cliente";
+import {
+  AvisoModo,
+  CamposLaudo,
+  type ModoFormulario,
+} from "@/components/campos-laudo";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -30,8 +35,18 @@ import {
 
 export function FormGranulometria({
   clientes,
+  modo = { tipo: "novo" },
+  iniciais,
+  idClienteInicial,
+  parecerInicial = "",
+  validadeInicial = "",
 }: {
   clientes: ClienteOpcao[];
+  modo?: ModoFormulario;
+  iniciais?: Record<string, unknown>;
+  idClienteInicial?: number | null;
+  parecerInicial?: string;
+  validadeInicial?: string;
 }) {
   const [estado, acaoCalcular] = useActionState<EstadoGranulometria, FormData>(
     calcularGranul,
@@ -43,16 +58,20 @@ export function FormGranulometria({
   >(salvarGranul, null);
 
   // Controlado só para o botão "aplicar teor sugerido" conseguir mexer nele.
-  // Começa vazio: análise nova não deve trazer teor de exemplo.
-  const [teor, setTeor] = useState<number | "">(VAZIO.teorMistura as "");
+  // Vazio numa análise nova; preenchido quando vem de uma carregada.
+  const [teor, setTeor] = useState<number | "">(
+    typeof iniciais?.teorMistura === "number"
+      ? (iniciais.teorMistura as number)
+      : ""
+  );
 
   const erro =
     (estado && !estado.ok && estado.error) ||
     (estadoSalvar && !estadoSalvar.ok && estadoSalvar.error);
 
-  // Análise nova abre em branco; depois de calcular, reexibe o que foi
-  // digitado para não perder a iteração.
-  const v: {
+  // Ordem de precedência: o que acabou de ser calculado > o que veio da
+  // análise carregada > formulário em branco.
+  const v = (estado?.ok ? estado.entradas : (iniciais ?? VAZIO)) as {
     nomeAreiaA: string;
     nomeAreiaB: string;
     areiaA1: Array<number | string>;
@@ -61,11 +80,17 @@ export function FormGranulometria({
     areiaB2: Array<number | string>;
     titulo?: string;
     observacao?: string;
-  } = estado?.ok ? estado.entradas : VAZIO;
+  };
+
+  const clienteSelecionado = estado?.ok
+    ? estado.idCliente
+    : (idClienteInicial ?? null);
 
   return (
     <div className="space-y-4">
       <form id="granul" action={acaoCalcular} className="space-y-4">
+        <AvisoModo modo={modo} />
+
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Identificação</CardTitle>
@@ -92,10 +117,7 @@ export function FormGranulometria({
           </CardContent>
         </Card>
 
-        <SeletorCliente
-          clientes={clientes}
-          idSelecionado={estado?.ok ? estado.idCliente : null}
-        />
+        <SeletorCliente clientes={clientes} idSelecionado={clienteSelecionado} />
 
         <Card>
           <CardHeader className="pb-3">
@@ -231,6 +253,8 @@ export function FormGranulometria({
           </CardContent>
         </Card>
 
+        <CamposLaudo parecer={parecerInicial} validoAte={validadeInicial} />
+
         {erro && (
           <p className="flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
             <AlertCircle className="h-4 w-4 shrink-0" />
@@ -246,7 +270,7 @@ export function FormGranulometria({
           {estado?.ok && (
             <SubmitButton formAction={acaoSalvar} variant="outline">
               <Save className="h-4 w-4" />
-              Salvar análise
+              {modo.tipo === "editar" ? "Salvar alterações" : "Salvar análise"}
             </SubmitButton>
           )}
         </div>

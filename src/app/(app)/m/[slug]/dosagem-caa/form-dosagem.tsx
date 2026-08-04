@@ -10,6 +10,11 @@ import {
   SeletorCliente,
   type ClienteOpcao,
 } from "@/components/seletor-cliente";
+import {
+  AvisoModo,
+  CamposLaudo,
+  type ModoFormulario,
+} from "@/components/campos-laudo";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
@@ -47,7 +52,22 @@ const PRECOS: Campo[] = [
   { nome: "precoAditivo", rotulo: "Aditivo", unidade: "R$/kg", passo: "0.01" },
 ];
 
-export function FormDosagem({ clientes }: { clientes: ClienteOpcao[] }) {
+export function FormDosagem({
+  clientes,
+  modo = { tipo: "novo" },
+  iniciais,
+  idClienteInicial,
+  parecerInicial = "",
+  validadeInicial = "",
+}: {
+  clientes: ClienteOpcao[];
+  modo?: ModoFormulario;
+  /** Valores vindos de uma análise carregada para editar ou copiar. */
+  iniciais?: Partial<Record<keyof DosagemCaaInput, string | number>>;
+  idClienteInicial?: number | null;
+  parecerInicial?: string;
+  validadeInicial?: string;
+}) {
   const [estado, acaoCalcular] = useActionState<EstadoCalculo, FormData>(
     calcular,
     null
@@ -61,14 +81,21 @@ export function FormDosagem({ clientes }: { clientes: ClienteOpcao[] }) {
     (estado && !estado.ok && estado.error) ||
     (estadoSalvar && !estadoSalvar.ok && estadoSalvar.error);
 
-  // Análise nova abre em branco; depois de calcular, reexibe o que o usuário
-  // digitou para não perder a iteração.
+  // Ordem de precedência: o que o usuário acabou de calcular > o que veio da
+  // análise carregada > formulário em branco.
   const v: Partial<Record<keyof DosagemCaaInput, string | number>> =
-    estado?.ok ? estado.entradas : VAZIO;
+    estado?.ok ? estado.entradas : (iniciais ?? VAZIO);
+
+  // Numa cópia, o cliente também vem preenchido — mas continua trocável.
+  const clienteSelecionado = estado?.ok
+    ? estado.idCliente
+    : (idClienteInicial ?? null);
 
   return (
     <div className="space-y-4">
       <form id="dosagem" action={acaoCalcular} className="space-y-4">
+        <AvisoModo modo={modo} />
+
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Identificação</CardTitle>
@@ -98,10 +125,7 @@ export function FormDosagem({ clientes }: { clientes: ClienteOpcao[] }) {
           </CardContent>
         </Card>
 
-        <SeletorCliente
-          clientes={clientes}
-          idSelecionado={estado?.ok ? estado.idCliente : null}
-        />
+        <SeletorCliente clientes={clientes} idSelecionado={clienteSelecionado} />
 
         <Card>
           <CardHeader className="pb-3">
@@ -130,6 +154,8 @@ export function FormDosagem({ clientes }: { clientes: ClienteOpcao[] }) {
           </CardContent>
         </Card>
 
+        <CamposLaudo parecer={parecerInicial} validoAte={validadeInicial} />
+
         {erro && (
           <p className="flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
             <AlertCircle className="h-4 w-4 shrink-0" />
@@ -145,7 +171,7 @@ export function FormDosagem({ clientes }: { clientes: ClienteOpcao[] }) {
           {estado?.ok && (
             <SubmitButton formAction={acaoSalvar} variant="outline">
               <Save className="h-4 w-4" />
-              Salvar análise
+              {modo.tipo === "editar" ? "Salvar alterações" : "Salvar análise"}
             </SubmitButton>
           )}
         </div>

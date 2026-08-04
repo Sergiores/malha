@@ -226,6 +226,19 @@ model Analise {
   resultados Json
   observacao String?
 
+  // Parecer técnico do engenheiro — a leitura profissional do resultado.
+  // É o que transforma um cálculo em laudo: os números saem da fórmula, a
+  // conclusão sai de quem assina.
+  parecer String?
+
+  // Até quando o laudo vale. Traço de concreto depende de lote de material e
+  // de condição de obra; sem prazo, alguém reusa um estudo de dois anos atrás.
+  validoAte DateTime? @map("valido_ate") @db.Date
+
+  // Carimbo do momento em que o status virou APROVADA. Gravado pelo sistema,
+  // nunca digitado — é o que dá fé à data no laudo.
+  aprovadaEm DateTime? @map("aprovada_em")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

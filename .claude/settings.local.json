@@ -28,7 +28,12 @@
       "PowerShell(\"=== CAA no dominio raiz ===\"; Resolve-DnsName -Name \"personalgestor.com.br\" -Type CAA -Server 1.1.1.1 -ErrorAction SilentlyContinue | Format-List Name, Type, Strings; \"=== CAA no subdominio ===\"; Resolve-DnsName -Name \"malha.personalgestor.com.br\" -Type CAA -Server 1.1.1.1 -ErrorAction SilentlyContinue | Format-List Name, Type, Strings; \"=== HTTP porta 80 \\(validacao ACME\\) ===\"; try { $r = Invoke-WebRequest -Uri \"http://malha.personalgestor.com.br/.well-known/acme-challenge/teste\" -UseBasicParsing -TimeoutSec 20 -MaximumRedirection 0; \"status=$\\($r.StatusCode\\) server=$\\($r.Headers['server']\\)\" } catch { $resp = $_.Exception.Response; \"status=$\\($resp.StatusCode.value__\\) server=$\\($resp.Headers['Server']\\) location=$\\($resp.Headers['Location']\\)\" })",
       "WebFetch(domain:cloudflare-dns.com)",
       "PowerShell($ProgressPreference='SilentlyContinue'; foreach \\($n in @\\(\"personalgestor.com.br\",\"malha.personalgestor.com.br\"\\)\\) { try { $r = Invoke-RestMethod -Uri \"https://cloudflare-dns.com/dns-query?name=$n&type=CAA\" -Headers @{accept=\"application/dns-json\"} -TimeoutSec 20; if \\($r.Answer\\) { \"$n -> \" + \\($r.Answer | ForEach-Object { $_.data }\\) } else { \"$n -> SEM registro CAA\" } } catch { \"$n -> erro: $\\($_.Exception.Message\\)\" } })",
-      "PowerShell(Set-Location \"D:\\\\Projetos\\\\PersonalMalha\"; Remove-Item \"netlify.toml\" -Force; Select-String -Path \"CLAUDE.md\",\"next.config.ts\",\"prisma\\\\schema.prisma\",\"README.md\" -Pattern \"Netlify|netlify\" -SimpleMatch | Select-Object Path, LineNumber, @{n='L';e={$_.Line.Trim\\(\\).Substring\\(0,[Math]::Min\\(80,$_.Line.Trim\\(\\).Length\\)\\)}})"
+      "PowerShell(Set-Location \"D:\\\\Projetos\\\\PersonalMalha\"; Remove-Item \"netlify.toml\" -Force; Select-String -Path \"CLAUDE.md\",\"next.config.ts\",\"prisma\\\\schema.prisma\",\"README.md\" -Pattern \"Netlify|netlify\" -SimpleMatch | Select-Object Path, LineNumber, @{n='L';e={$_.Line.Trim\\(\\).Substring\\(0,[Math]::Min\\(80,$_.Line.Trim\\(\\).Length\\)\\)}})",
+      "PowerShell(npm run verificar:calculos)",
+      "PowerShell(npm run build 2>&1)",
+      "PowerShell(npx prisma migrate status 2>&1)",
+      "PowerShell(npx tsx tmp-checa-laudo.ts)",
+      "PowerShell(npx tsc --noEmit)"
     ]
   }
 }
