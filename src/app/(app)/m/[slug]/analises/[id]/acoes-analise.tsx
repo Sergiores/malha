@@ -13,9 +13,11 @@ import { SubmitButton } from "@/components/submit-button";
 export function AcoesAnalise({
   id,
   status,
+  slugModulo,
 }: {
   id: number;
   status: StatusAnalise;
+  slugModulo: string;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 print:hidden">
@@ -23,6 +25,7 @@ export function AcoesAnalise({
         <form key={s} action={alterarStatus}>
           <input type="hidden" name="id" value={id} />
           <input type="hidden" name="status" value={s} />
+          <input type="hidden" name="slugModulo" value={slugModulo} />
           <SubmitButton variant="outline" size="sm">
             Marcar {STATUS_INFO[s].rotulo.toLowerCase()}
           </SubmitButton>
@@ -43,6 +46,7 @@ export function AcoesAnalise({
         }}
       >
         <input type="hidden" name="id" value={id} />
+        <input type="hidden" name="slugModulo" value={slugModulo} />
         <SubmitButton variant="ghost" size="sm">
           <Trash2 className="h-4 w-4" />
           Excluir

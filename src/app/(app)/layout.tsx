@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Ruler, Shield, UserRound } from "lucide-react";
 import { requireConta } from "@/lib/auth";
 import { isSuperadmin } from "@/lib/superadmin";
-import { meusModulos } from "@/lib/modulo";
+import { calculadorasPorModulo, meusModulos } from "@/lib/modulo";
 import { sair } from "@/app/(auth)/actions";
 import { Button } from "@/components/ui/button";
 import { MenuModulos, type ItemMenu } from "@/components/menu-modulos";
@@ -16,12 +16,31 @@ export default async function AppLayout({
   const { conta } = await requireConta();
   const ehSuper = isSuperadmin(conta.email);
 
-  const itens: ItemMenu[] = (await meusModulos()).map((m) => ({
-    slug: m.slug,
-    nome: m.nome,
-    liberado: m.situacao === "vigente",
-    situacao: m.situacao,
-  }));
+  const [modulos, calcs] = await Promise.all([
+    meusModulos(),
+    calculadorasPorModulo(),
+  ]);
+
+  const itens: ItemMenu[] = modulos.map((m) => {
+    const liberado = m.situacao === "vigente";
+    return {
+      slug: m.slug,
+      nome: m.nome,
+      liberado,
+      situacao: m.situacao,
+      // Sub-itens só de módulo liberado. As análises são específicas do
+      // módulo, então vivem aqui — não num menu global.
+      filhos: liberado
+        ? [
+            ...(calcs.get(m.slug) ?? []).map((c) => ({
+              href: `/m/${m.slug}/${c.slug}`,
+              rotulo: c.nome,
+            })),
+            { href: `/m/${m.slug}/analises`, rotulo: "Análises" },
+          ]
+        : [],
+    };
+  });
 
   return (
     <div className="min-h-screen bg-muted/30">

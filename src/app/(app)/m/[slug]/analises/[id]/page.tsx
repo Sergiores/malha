@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Ruler } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { contaComOrganizacao } from "@/lib/organizacao";
+import { requireModulo } from "@/lib/modulo";
 import { STATUS_INFO, dataHoraBr } from "@/lib/analise";
 import type { DosagemCaaResultado } from "@/core/calculators/dosagem-caa/calc";
 import type { DosagemCaaInput } from "@/core/calculators/dosagem-caa/schema";
@@ -14,17 +15,23 @@ import { AcoesAnalise } from "./acoes-analise";
 export default async function LaudoPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string; id: string }>;
 }) {
-  const { id } = await params;
+  const { slug, id } = await params;
   const idNum = Number(id);
   if (!Number.isInteger(idNum)) notFound();
 
+  const { modulo } = await requireModulo(slug);
   const { organizacao } = await contaComOrganizacao();
 
-  // O filtro por organização é o isolamento: id de outro cliente dá 404.
+  // Dois filtros, dois propósitos: `idOrganizacao` isola o cliente,
+  // `idModulo` impede abrir a análise de um módulo pela URL de outro.
   const analise = await prisma.analise.findFirst({
-    where: { id: idNum, idOrganizacao: organizacao.id },
+    where: {
+      id: idNum,
+      idOrganizacao: organizacao.id,
+      calculadora: { idModulo: modulo.id },
+    },
     include: {
       calculadora: { select: { nome: true } },
       conta: { select: { nome: true, email: true } },
@@ -41,7 +48,7 @@ export default async function LaudoPage({
   return (
     <div className="space-y-4">
       <div className="print:hidden">
-        <Link href="/analises">
+        <Link href={`/m/${slug}/analises`}>
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4" />
             Análises
@@ -56,34 +63,32 @@ export default async function LaudoPage({
         <span className="ml-auto text-sm">Laudo de dosagem</span>
       </div>
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="mb-1 flex flex-wrap items-center gap-2">
-            <span
-              className={`rounded px-2 py-0.5 text-xs font-medium ${s.classe}`}
-            >
-              {s.rotulo}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              Análise #{analise.id}
-            </span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {analise.titulo}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {analise.calculadora.nome} · {dataHoraBr(analise.createdAt)} ·{" "}
-            {analise.conta.nome ?? analise.conta.email}
-          </p>
-          {analise.observacao && (
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              {analise.observacao}
-            </p>
-          )}
+      <div>
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <span className={`rounded px-2 py-0.5 text-xs font-medium ${s.classe}`}>
+            {s.rotulo}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Análise #{analise.id}
+          </span>
         </div>
+        <h1 className="text-2xl font-bold tracking-tight">{analise.titulo}</h1>
+        <p className="text-sm text-muted-foreground">
+          {analise.calculadora.nome} · {dataHoraBr(analise.createdAt)} ·{" "}
+          {analise.conta.nome ?? analise.conta.email}
+        </p>
+        {analise.observacao && (
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            {analise.observacao}
+          </p>
+        )}
       </div>
 
-      <AcoesAnalise id={analise.id} status={analise.status} />
+      <AcoesAnalise
+        id={analise.id}
+        status={analise.status}
+        slugModulo={slug}
+      />
 
       {/* Entradas — um laudo sem as premissas não é auditável */}
       <Card>

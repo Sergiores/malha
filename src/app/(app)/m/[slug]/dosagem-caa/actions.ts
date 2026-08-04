@@ -103,9 +103,9 @@ export async function salvarAnalise(
     },
   });
 
-  revalidatePath("/analises");
+  revalidatePath(`/m/${MODULO}/analises`);
   revalidatePath("/dashboard");
-  redirect(`/analises/${analise.id}`);
+  redirect(`/m/${MODULO}/analises/${analise.id}`);
 }
 
 const STATUS_VALIDOS: StatusAnalise[] = [
@@ -115,9 +115,13 @@ const STATUS_VALIDOS: StatusAnalise[] = [
   "ARQUIVADA",
 ];
 
-export async function alterarStatus(
-  formData: FormData
-): Promise<void> {
+/** Slug do módulo vindo do formulário, restrito ao que existe no registry. */
+function slugSeguro(formData: FormData): string {
+  const s = String(formData.get("slugModulo") ?? "");
+  return /^[a-z0-9-]{1,60}$/.test(s) ? s : MODULO;
+}
+
+export async function alterarStatus(formData: FormData): Promise<void> {
   const { organizacao } = await contaComOrganizacao();
 
   const id = Number(formData.get("id"));
@@ -131,8 +135,9 @@ export async function alterarStatus(
     data: { status },
   });
 
-  revalidatePath(`/analises/${id}`);
-  revalidatePath("/analises");
+  const slug = slugSeguro(formData);
+  revalidatePath(`/m/${slug}/analises/${id}`);
+  revalidatePath(`/m/${slug}/analises`);
   revalidatePath("/dashboard");
 }
 
@@ -146,7 +151,8 @@ export async function excluirAnalise(formData: FormData): Promise<void> {
     where: { id, idOrganizacao: organizacao.id },
   });
 
-  revalidatePath("/analises");
+  const slug = slugSeguro(formData);
+  revalidatePath(`/m/${slug}/analises`);
   revalidatePath("/dashboard");
-  redirect("/analises");
+  redirect(`/m/${slug}/analises`);
 }

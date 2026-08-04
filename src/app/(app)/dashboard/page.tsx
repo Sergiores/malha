@@ -30,7 +30,11 @@ export default async function DashboardPage() {
     prisma.analise.findMany({
       where: { idOrganizacao: organizacao.id },
       orderBy: { createdAt: "desc" },
-      include: { calculadora: { select: { nome: true, slug: true } } },
+      include: {
+        calculadora: {
+          select: { nome: true, slug: true, modulo: { select: { slug: true } } },
+        },
+      },
       take: 500,
     }),
     meusModulos(),
@@ -190,7 +194,7 @@ export default async function DashboardPage() {
                 return (
                   <Link
                     key={a.id}
-                    href={`/analises/${a.id}`}
+                    href={`/m/${a.calculadora.modulo.slug}/analises/${a.id}`}
                     className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 transition-colors hover:bg-accent/50"
                   >
                     <div className="min-w-0">

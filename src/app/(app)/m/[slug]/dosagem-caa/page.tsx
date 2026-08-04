@@ -25,7 +25,10 @@ export default async function DosagemCaaPage({
 
   const { organizacao } = await contaComOrganizacao();
   const recentes = await prisma.analise.count({
-    where: { idOrganizacao: organizacao.id },
+    where: {
+      idOrganizacao: organizacao.id,
+      calculadora: { idModulo: modulo.id },
+    },
   });
 
   return (

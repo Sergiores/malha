@@ -84,6 +84,28 @@ export const meusModulos = cache(async function meusModulos() {
 });
 
 /**
+ * Calculadoras ativas, agrupadas por módulo. O menu lateral usa para montar
+ * os sub-itens de cada módulo liberado.
+ */
+export const calculadorasPorModulo = cache(
+  async function calculadorasPorModulo() {
+    const calcs = await prisma.calculadora.findMany({
+      where: { ativa: true, modulo: { ativo: true } },
+      orderBy: { ordem: "asc" },
+      select: { slug: true, nome: true, modulo: { select: { slug: true } } },
+    });
+
+    const mapa = new Map<string, { slug: string; nome: string }[]>();
+    for (const c of calcs) {
+      const lista = mapa.get(c.modulo.slug) ?? [];
+      lista.push({ slug: c.slug, nome: c.nome });
+      mapa.set(c.modulo.slug, lista);
+    }
+    return mapa;
+  }
+);
+
+/**
  * O GATE COMERCIAL.
  *
  * Exige licença vigente do módulo para o usuário logado. Roda no layout da

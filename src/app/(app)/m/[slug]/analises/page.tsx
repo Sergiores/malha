@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FileText, Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { contaComOrganizacao } from "@/lib/organizacao";
+import { requireModulo } from "@/lib/modulo";
 import { STATUS_INFO, brl, dataHoraBr } from "@/lib/analise";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,17 +13,38 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-type ResumoResultado = { custoTotal?: number; m?: number; alfa?: number };
+type ResumoResultado = { custoTotal?: number };
 
-export default async function AnalisesPage() {
+/**
+ * Análises do MÓDULO — não um histórico global. Cada módulo tem as suas, e
+ * o filtro por `calculadora.idModulo` é o que garante isso: uma análise de
+ * dosagem não aparece na lista de estrutura metálica.
+ */
+export default async function AnalisesDoModuloPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const { modulo } = await requireModulo(slug);
   const { organizacao } = await contaComOrganizacao();
 
-  const analises = await prisma.analise.findMany({
-    where: { idOrganizacao: organizacao.id },
-    orderBy: { createdAt: "desc" },
-    include: { calculadora: { select: { nome: true, slug: true } } },
-    take: 200,
-  });
+  const [analises, calculadoras] = await Promise.all([
+    prisma.analise.findMany({
+      where: {
+        idOrganizacao: organizacao.id,
+        calculadora: { idModulo: modulo.id },
+      },
+      orderBy: { createdAt: "desc" },
+      include: { calculadora: { select: { nome: true } } },
+      take: 200,
+    }),
+    prisma.calculadora.findMany({
+      where: { idModulo: modulo.id, ativa: true },
+      orderBy: { ordem: "asc" },
+      select: { slug: true, nome: true },
+    }),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -30,15 +52,18 @@ export default async function AnalisesPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Análises</h1>
           <p className="text-muted-foreground">
-            Cada cálculo salvo vira um registro com data, status e laudo.
+            {modulo.nome} — cada cálculo salvo vira um registro com data,
+            status e laudo.
           </p>
         </div>
-        <Link href="/m/concreto-fresco-endurecido/dosagem-caa">
-          <Button size="sm">
-            <Plus className="h-4 w-4" />
-            Nova dosagem
-          </Button>
-        </Link>
+        {calculadoras[0] && (
+          <Link href={`/m/${slug}/${calculadoras[0].slug}`}>
+            <Button size="sm">
+              <Plus className="h-4 w-4" />
+              Nova análise
+            </Button>
+          </Link>
+        )}
       </div>
 
       {analises.length === 0 ? (
@@ -80,7 +105,7 @@ export default async function AnalisesPage() {
                       >
                         <td className="px-4 py-2">
                           <Link
-                            href={`/analises/${a.id}`}
+                            href={`/m/${slug}/analises/${a.id}`}
                             className="font-medium hover:underline"
                           >
                             {a.titulo}
