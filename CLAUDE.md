@@ -22,7 +22,7 @@ Material de origem em `docs/`:
 - **Next.js 15.5** (App Router, TypeScript) — full-stack
 - **Prisma 6** (ORM) sobre **Supabase / PostgreSQL**
 - **Supabase Auth** — autenticação (e-mail/senha)
-- **Tailwind CSS 3 + shadcn/ui** (estilo "new-york", base neutral)
+- **Tailwind CSS 3 + shadcn/ui** (estilo "new-york")
 - **Zod** — validação
 - **Vercel** — deploy, funções na região `gru1` (São Paulo)
 
@@ -143,6 +143,34 @@ src/lib/validations/          schemas Zod
 src/components/ui/            shadcn
 src/middleware.ts             sessão (não autorização)
 ```
+
+## Identidade visual — "prancheta técnica"
+
+A referência é papel de desenho de engenharia. Quem usa isto assina laudo,
+então precisão vem antes de efeito: brilho demais atrapalha a leitura de um
+número.
+
+- **Malha milimetrada no fundo** (`body` em `globals.css`): dois grids
+  sobrepostos, 12 px e 96 px. Some na impressão.
+- **Azul de cianotipia** como primária (`199 89%`), nos dois temas.
+- **Números em monoespaçada** (JetBrains Mono, `font-mono`) nos indicadores,
+  no traço unitário e nas tabelas — coluna de número desalinhada é número
+  difícil de conferir.
+- **Utilitários próprios**: `.card-tec` (cartão translúcido, deixa a malha
+  aparecer), `.canto-tecnico` (cantoneira de cota que acende no hover),
+  `.varredura` (luz que cruza o item), `.surgir` (entrada escalonada).
+- `prefers-reduced-motion` zera todas as animações.
+
+⚠️ **As variáveis de tema ficam FORA de `@layer base`.** Dentro da layer o
+Tailwind descarta regras cujo seletor não aparece no código escaneado — e
+como ninguém escreve `className="dark"` à mão, o bloco `.dark` sumia do CSS
+final. O tema escuro simplesmente não existia e nada quebrava: a página só
+continuava clara.
+
+O alternador (`src/components/alternador-tema.tsx`) tem três estados e grava
+em `localStorage`. Um script inline no `layout.tsx` raiz aplica a classe
+**antes da primeira pintura** — sem ele, quem usa o tema escuro leva um
+clarão branco a cada carregamento.
 
 ## Padrões a seguir
 

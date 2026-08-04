@@ -2,61 +2,201 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --primary: 217.2 91.2% 41%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 217.2 91.2% 41%;
-    --radius: 0.5rem;
-  }
+/*
+ * Identidade visual — "prancheta técnica".
+ *
+ * A referência é papel de desenho de engenharia: malha milimetrada ao fundo,
+ * azul de cianotipia, números em fonte tabular. O objetivo é parecer
+ * instrumento de precisão, não painel de videogame — quem usa isto assina
+ * laudo, e brilho demais atrapalha a leitura de um número.
+ */
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 47.4% 11.2%;
-    --card-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 217.2 91.2% 59.8%;
-  }
+/*
+ * As variáveis de tema ficam FORA de `@layer base` de propósito.
+ *
+ * Dentro da layer, o Tailwind descarta regras cujo seletor não aparece no
+ * código escaneado — e como ninguém escreve `className="dark"` à mão, o
+ * bloco `.dark` sumia do CSS final e o tema escuro simplesmente não existia.
+ * Levou tempo para notar porque nada quebra: a página só continua clara.
+ */
+:root {
+    --background: 210 40% 98.5%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --primary: 199 89% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 45%;
+    --accent: 199 89% 94%;
+    --accent-foreground: 199 89% 25%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 89%;
+    --input: 214 32% 89%;
+    --ring: 199 89% 48%;
+    --radius: 0.625rem;
+
+    /* Cor das linhas da malha de fundo. */
+    --malha: 214 32% 91%;
+}
+
+.dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 96%;
+    --card: 222 44% 9%;
+    --card-foreground: 210 40% 96%;
+    --primary: 199 89% 55%;
+    --primary-foreground: 222 47% 8%;
+    --secondary: 217 33% 15%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 62%;
+    --accent: 199 60% 18%;
+    --accent-foreground: 199 89% 80%;
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 199 89% 55%;
+
+    --malha: 217 33% 14%;
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+    /* Malha milimetrada: dois grids sobrepostos, o fino de 8px e o grosso
+       de 96px, como papel quadriculado de projeto. Fica no fundo o tempo
+       todo e some na impressão. */
+    background-image:
+      linear-gradient(hsl(var(--malha)) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--malha)) 1px, transparent 1px),
+      linear-gradient(hsl(var(--malha) / 0.55) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--malha) / 0.55) 1px, transparent 1px);
+    background-size:
+      96px 96px,
+      96px 96px,
+      12px 12px,
+      12px 12px;
+    background-attachment: fixed;
+  }
+
+  /* Números de engenharia: largura fixa para as colunas alinharem. */
+  .tabular-nums,
+  table {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+}
+
+@layer components {
+  /* Cartão com leve translucidez, para a malha aparecer por baixo. */
+  .card-tec {
+    @apply border bg-card/80 backdrop-blur-sm;
+  }
+
+  /* Marca d'água de canto — dois traços finos, como cotas de desenho. */
+  .canto-tecnico {
+    position: relative;
+  }
+  .canto-tecnico::before,
+  .canto-tecnico::after {
+    content: "";
+    position: absolute;
+    background: hsl(var(--primary) / 0.35);
+    transition: background 200ms ease;
+  }
+  .canto-tecnico::before {
+    top: 0;
+    left: 0;
+    width: 14px;
+    height: 1px;
+  }
+  .canto-tecnico::after {
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 14px;
+  }
+  .canto-tecnico:hover::before,
+  .canto-tecnico:hover::after {
+    background: hsl(var(--primary));
+  }
+}
+
+@layer utilities {
+  /* Varredura de luz que cruza o item ao passar o mouse. */
+  .varredura {
+    position: relative;
+    overflow: hidden;
+  }
+  .varredura::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--primary) / 0.12),
+      transparent
+    );
+    transition: transform 600ms ease;
+    pointer-events: none;
+  }
+  .varredura:hover::after {
+    transform: translateX(100%);
+  }
+
+  @keyframes surgir {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .surgir {
+    animation: surgir 320ms ease both;
+  }
+
+  @keyframes pulsar-borda {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.35);
+    }
+    50% {
+      box-shadow: 0 0 0 4px hsl(var(--primary) / 0);
+    }
+  }
+  .pulsar {
+    animation: pulsar-borda 2.4s ease-in-out infinite;
+  }
+}
+
+/* Quem prefere menos movimento não recebe nenhum. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
 /* Impressão do laudo: o navegador salva em PDF sem precisarmos de uma
    biblioteca de geração no servidor. Some tudo que é navegação e força
-   fundo branco — impressora não imprime tema escuro de graça. */
+   fundo branco — impressora não imprime tema escuro nem malha de graça. */
 @media print {
   @page {
     margin: 14mm;
@@ -71,12 +211,18 @@
 
   body {
     background: #fff !important;
+    background-image: none !important;
     color: #000 !important;
   }
 
   main {
     max-width: 100% !important;
     padding: 0 !important;
+  }
+
+  .card-tec {
+    backdrop-filter: none !important;
+    background: #fff !important;
   }
 
   /* Não parte um cartão de resultado no meio de duas páginas. */

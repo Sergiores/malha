@@ -262,15 +262,17 @@ function Indicador({
 }) {
   return (
     <div
-      className={`rounded-lg border p-4 ${
-        destaque ? "border-primary/40 bg-primary/5" : "bg-background"
+      className={`canto-tecnico rounded-lg border p-4 transition-colors ${
+        destaque
+          ? "border-primary/40 bg-primary/5"
+          : "bg-card/60 hover:border-primary/30"
       }`}
     >
-      <p className="truncate text-xs uppercase tracking-wide text-muted-foreground">
+      <p className="truncate text-[0.65rem] uppercase tracking-[0.12em] text-muted-foreground">
         {rotulo}
       </p>
       <p
-        className={`mt-1 text-2xl font-bold tabular-nums tracking-tight ${
+        className={`mt-1 font-mono text-2xl font-medium tabular-nums tracking-tight ${
           destaque ? "text-primary" : ""
         }`}
       >

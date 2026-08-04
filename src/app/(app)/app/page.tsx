@@ -43,8 +43,12 @@ export default async function AppHome() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
+      <div className="surgir">
+        <p className="mb-1 flex items-center gap-2 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-primary">
+          <span className="h-px w-6 bg-primary" />
+          Painel
+        </p>
+        <h1 className="text-3xl font-bold tracking-tight">
           Olá, {conta.nome ?? "engenheiro"}
         </h1>
         <p className="text-muted-foreground">
@@ -53,16 +57,17 @@ export default async function AppHome() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {modulos.map((m) => {
+        {modulos.map((m, i) => {
           const s = SITUACAO[m.situacao];
           const liberado = m.situacao === "vigente";
 
           const cartao = (
             <Card
+              style={{ animationDelay: `${i * 60}ms` }}
               className={
                 liberado
-                  ? "h-full transition-colors hover:border-primary"
-                  : "h-full opacity-70"
+                  ? "card-tec canto-tecnico varredura surgir h-full transition-all duration-300 hover:-translate-y-1 hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5"
+                  : "card-tec surgir h-full opacity-60 transition-opacity hover:opacity-80"
               }
             >
               <CardHeader>

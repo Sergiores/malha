@@ -97,7 +97,7 @@ export function ResultadoDosagem({
           <CardTitle className="text-base">Traço unitário</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="overflow-x-auto rounded bg-muted px-3 py-2 font-mono text-sm">
+          <p className="overflow-x-auto rounded-md border border-primary/20 bg-primary/5 px-3 py-2.5 font-mono text-sm tracking-tight text-primary">
             {r.tracoUnitario}
           </p>
           <p className="text-xs text-muted-foreground">
@@ -215,15 +215,17 @@ function Indicador({
 }) {
   return (
     <div
-      className={`rounded-lg border p-4 ${
-        destaque ? "border-primary/40 bg-primary/5" : "bg-background"
+      className={`canto-tecnico rounded-lg border p-4 transition-colors ${
+        destaque
+          ? "border-primary/40 bg-primary/5"
+          : "bg-card/60 hover:border-primary/30"
       }`}
     >
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+      <p className="text-[0.65rem] uppercase tracking-[0.12em] text-muted-foreground">
         {rotulo}
       </p>
       <p
-        className={`mt-1 text-2xl font-bold tabular-nums tracking-tight ${
+        className={`mt-1 font-mono text-2xl font-medium tabular-nums tracking-tight ${
           destaque ? "text-primary" : ""
         }`}
       >
