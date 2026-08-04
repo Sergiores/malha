@@ -13,3 +13,10 @@
   # Fixa o Node para o build não mudar de comportamento quando a Netlify
   # trocar o default.
   NODE_VERSION = "22"
+
+  # Skew protection: mantém a aba já aberta conversando com o deploy que ela
+  # carregou. Sem isso, publicar enquanto alguém usa o sistema quebra a
+  # sessão dele — cada build gera IDs novos de server action, e o JS antigo
+  # chama um ID que não existe mais ("UnrecognizedActionError", e 404 nos
+  # chunks). O usuário só percebe quando um botão para de responder.
+  NETLIFY_NEXT_SKEW_PROTECTION = "true"

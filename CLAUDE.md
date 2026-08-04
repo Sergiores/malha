@@ -432,6 +432,16 @@ cliente pagando, tudo bem. Antes do primeiro, crie um segundo projeto
 Supabase para desenvolvimento — hoje um teste local mexe em dados reais e
 uma migration errada derruba o sistema de quem pagou.
 
+### Skew protection (não remova)
+
+`NETLIFY_NEXT_SKEW_PROTECTION = "true"` no `netlify.toml`. Cada build gera
+IDs novos para as server actions; sem isso, quem estava com a aba aberta
+durante um deploy passa a chamar um ID que não existe mais. Sintoma:
+`UnrecognizedActionError` no console e 404 nos chunks — na prática, um botão
+que simplesmente para de responder. Já aconteceu aqui.
+
+Se acontecer mesmo assim, `Ctrl+Shift+R` resolve para o usuário.
+
 ### Correção do Prisma na Netlify (não remova)
 
 As funções da Netlify rodam Amazon Linux + OpenSSL 3, e o Prisma carrega o
