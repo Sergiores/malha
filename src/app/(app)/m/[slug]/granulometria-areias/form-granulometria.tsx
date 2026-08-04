@@ -8,8 +8,8 @@ import {
   type EstadoGranulometria,
 } from "./actions";
 import {
-  PADRAO,
   PENEIRAS,
+  VAZIO,
 } from "@/core/calculators/granulometria-areias/schema";
 import { ResultadoGranulometria } from "@/components/resultado-granulometria";
 import {
@@ -43,13 +43,25 @@ export function FormGranulometria({
   >(salvarGranul, null);
 
   // Controlado só para o botão "aplicar teor sugerido" conseguir mexer nele.
-  const [teor, setTeor] = useState<number>(PADRAO.teorMistura);
+  // Começa vazio: análise nova não deve trazer teor de exemplo.
+  const [teor, setTeor] = useState<number | "">(VAZIO.teorMistura as "");
 
   const erro =
     (estado && !estado.ok && estado.error) ||
     (estadoSalvar && !estadoSalvar.ok && estadoSalvar.error);
 
-  const v = estado?.ok ? estado.entradas : PADRAO;
+  // Análise nova abre em branco; depois de calcular, reexibe o que foi
+  // digitado para não perder a iteração.
+  const v: {
+    nomeAreiaA: string;
+    nomeAreiaB: string;
+    areiaA1: Array<number | string>;
+    areiaA2: Array<number | string>;
+    areiaB1: Array<number | string>;
+    areiaB2: Array<number | string>;
+    titulo?: string;
+    observacao?: string;
+  } = estado?.ok ? estado.entradas : VAZIO;
 
   return (
     <div className="space-y-4">
@@ -150,7 +162,8 @@ export function FormGranulometria({
                               step="0.1"
                               min="0"
                               inputMode="decimal"
-                              defaultValue={origem[i]}
+                              defaultValue={origem[i] ?? ""}
+                              placeholder="0"
                               className="h-8 text-right tabular-nums"
                               aria-label={`${pref} peneira ${p.abertura} mm`}
                             />
@@ -184,12 +197,15 @@ export function FormGranulometria({
                   min="0"
                   max="100"
                   value={teor}
-                  onChange={(ev) => setTeor(Number(ev.target.value))}
+                  placeholder="0"
+                  onChange={(ev) =>
+                    setTeor(ev.target.value === "" ? "" : Number(ev.target.value))
+                  }
                   required
                 />
               </div>
               <p className="pb-2 text-sm text-muted-foreground">
-                Areia B: {100 - (Number.isFinite(teor) ? teor : 0)}%
+                Areia B: {teor === "" ? 100 : 100 - teor}%
               </p>
 
               {estado?.ok && estado.sugestao.teor !== teor && (

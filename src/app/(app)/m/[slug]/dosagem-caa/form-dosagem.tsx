@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 import { AlertCircle, Calculator, Save } from "lucide-react";
 import { calcular, salvarAnalise, type EstadoCalculo } from "./actions";
-import { PADRAO } from "@/core/calculators/dosagem-caa/schema";
+import { VAZIO } from "@/core/calculators/dosagem-caa/schema";
+import type { DosagemCaaInput } from "@/core/calculators/dosagem-caa/schema";
 import { ResultadoDosagem } from "@/components/resultado-dosagem";
 import {
   SeletorCliente,
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui/card";
 
 type Campo = {
-  nome: keyof typeof PADRAO;
+  nome: keyof DosagemCaaInput;
   rotulo: string;
   unidade?: string;
   passo: string;
@@ -60,8 +61,10 @@ export function FormDosagem({ clientes }: { clientes: ClienteOpcao[] }) {
     (estado && !estado.ok && estado.error) ||
     (estadoSalvar && !estadoSalvar.ok && estadoSalvar.error);
 
-  // Reexibe o que o usuário digitou, para não perder a iteração ao recalcular.
-  const v = estado?.ok ? estado.entradas : PADRAO;
+  // Análise nova abre em branco; depois de calcular, reexibe o que o usuário
+  // digitou para não perder a iteração.
+  const v: Partial<Record<keyof DosagemCaaInput, string | number>> =
+    estado?.ok ? estado.entradas : VAZIO;
 
   return (
     <div className="space-y-4">
@@ -181,7 +184,8 @@ function CampoNumerico({
         type="number"
         step={campo.passo}
         inputMode="decimal"
-        defaultValue={valor as number}
+        defaultValue={valor ?? ""}
+        placeholder="0"
         required
       />
       {campo.ajuda && (

@@ -325,6 +325,16 @@ Depois: registrar em `src/core/registry.ts` (dentro do módulo certo), rodar
 `npm run db:sync-modulos`, e criar a rota em
 `src/app/(app)/m/[slug]/<calc-slug>/`.
 
+Cada `schema.ts` expõe dois conjuntos de valores, e eles não devem ser
+confundidos:
+
+- **`VAZIO`** — o que o formulário mostra ao abrir uma análise nova. Campos
+  em branco. Pré-preencher com exemplo fazia o engenheiro apagar campo por
+  campo e, pior, permitia salvar um laudo com número de amostra achando que
+  era o seu.
+- **`PADRAO`** — o caso de referência da planilha. Serve só ao
+  `verificar.ts`; nenhuma tela usa.
+
 **`npm run verificar:calculos` é o critério de aceite.** Se os números
 mudarem, o motor divergiu da planilha que o engenheiro já valida na prática
 — isso precisa ser decisão, não acidente.

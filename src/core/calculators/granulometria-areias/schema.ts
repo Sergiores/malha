@@ -80,7 +80,26 @@ export const granulometriaSchema = z
 
 export type GranulometriaInput = z.infer<typeof granulometriaSchema>;
 
-/** Caso de referência da planilha de origem. */
+/**
+ * Formulário em branco — o que a tela mostra ao abrir uma análise nova.
+ *
+ * As massas ficam vazias, não zero: zero é uma leitura de ensaio válida
+ * ("nada retido nesta peneira") e pré-preencher com ela esconderia o que
+ * ainda não foi informado.
+ */
+export const VAZIO = {
+  nomeAreiaA: "Areia fina",
+  nomeAreiaB: "Areia regular",
+  areiaA1: PENEIRAS.map(() => ""),
+  areiaA2: PENEIRAS.map(() => ""),
+  areiaB1: PENEIRAS.map(() => ""),
+  areiaB2: PENEIRAS.map(() => ""),
+  teorMistura: "",
+  titulo: "",
+  observacao: "",
+};
+
+/** Caso de referência da planilha de origem — usado no teste de paridade. */
 export const PADRAO: GranulometriaInput = {
   nomeAreiaA: "Areia fina",
   nomeAreiaB: "Areia regular",

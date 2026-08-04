@@ -48,7 +48,31 @@ export const dosagemCaaSchema = z.object({
 
 export type DosagemCaaInput = z.infer<typeof dosagemCaaSchema>;
 
-/** Valores do caso de referência da planilha original. */
+/**
+ * Formulário em branco — o que a tela mostra ao abrir uma análise nova.
+ *
+ * Separado de `PADRAO` de propósito: preencher com o caso de referência
+ * fazia o engenheiro apagar campo por campo, e pior, corria o risco de
+ * alguém salvar um laudo com número de exemplo achando que era o seu.
+ */
+export const VAZIO: Record<keyof DosagemCaaInput, string> = {
+  cimento: "",
+  fatorAC: "",
+  teorArgamassa: "",
+  teorFiler: "",
+  teorAditivo: "",
+  massaEspecifica: "",
+  precoCimento: "",
+  precoFiler: "",
+  precoMiudo: "",
+  precoGraudo: "",
+  precoAgua: "",
+  precoAditivo: "",
+  titulo: "",
+  observacao: "",
+};
+
+/** Caso de referência da planilha original — usado no teste de paridade. */
 export const PADRAO: DosagemCaaInput = {
   cimento: 400,
   fatorAC: 0.5,
