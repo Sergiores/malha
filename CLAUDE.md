@@ -26,15 +26,12 @@ Material de origem em `docs/`:
 - **Zod** — validação
 - **Vercel** — deploy, funções na região `gru1` (São Paulo)
 
-> **Por que a região importa mais do que parece.** Na Netlify (plano free) as
-> funções rodavam em `us-east-2` e o banco fica em `sa-east-1`. Medido em
-> produção: um `SELECT 1` levava **624 ms** — só ida e volta, sem trabalho.
-> Localmente, 140 ms. Toda navegação pagava esse pedágio 3 ou 4 vezes.
-> A Vercel deixa escolher a região (uma no plano Hobby), e `gru1` fica ao
-> lado do banco.
->
-> `netlify.toml` continua no repo como caminho de volta. Se voltar a usá-lo,
-> lembre do `NETLIFY_NEXT_SKEW_PROTECTION`.
+> **A região da função é a configuração mais importante deste projeto.**
+> `gru1` fica ao lado do banco (`sa-east-1`). Não mude sem medir: o projeto
+> já rodou com as funções em `us-east-2` e um `SELECT 1` levava **624 ms** —
+> só ida e volta, sem trabalho nenhum. Cada navegação pagava esse pedágio 3
+> ou 4 vezes, e a tela demorava ~1,8 s. Com `gru1`, caiu para ~250 ms.
+> O plano Hobby permite uma região; conferir em Settings → Functions.
 >
 > **Cloudflare Workers foi avaliado e descartado**: exigiria trocar
 > `PrismaClient` por `@prisma/adapter-pg` e provavelmente provisionar um
@@ -428,37 +425,41 @@ Para criar outro: adicionar em `src/core/registry.ts` e rodar
 
 ### Produção
 
-- **https://malha.personalgestor.com.br** — Netlify, certificado Let's Encrypt
-  (renova sozinho). Deploy automático a cada push em `main`.
-- URL alternativa: `glittering-cuchufli-7c77f3.netlify.app`
+- **https://malha.personalgestor.com.br** — Vercel, funções em `gru1`.
+  Certificado automático. Deploy a cada push em `main`.
 - Repositório: `github.com/Sergiores/malha` (o remote usa
   `https://Sergiores@github.com/...` porque o Windows guarda a credencial de
   outra conta GitHub; sem o usuário na URL o push dá 403).
 - DNS do domínio fica na **Cloudflare**: CNAME `malha` →
-  `glittering-cuchufli-7c77f3.netlify.app`, com o proxy **desligado**
-  (DNS only). Com proxy ligado o Let's Encrypt não valida.
+  `cname.vercel-dns.com`, com o proxy **desligado** (DNS only). Com proxy
+  ligado a emissão do certificado não valida.
+- Latência esperada de uma navegação autenticada: **~250 ms**. Se subir para
+  a casa do segundo, o primeiro suspeito é a região da função.
 
 ⚠️ **Dev e produção usam o MESMO banco Supabase.** Enquanto não houver
 cliente pagando, tudo bem. Antes do primeiro, crie um segundo projeto
 Supabase para desenvolvimento — hoje um teste local mexe em dados reais e
 uma migration errada derruba o sistema de quem pagou.
 
-### Skew protection (não remova)
+### Skew protection
 
-`NETLIFY_NEXT_SKEW_PROTECTION = "true"` no `netlify.toml`. Cada build gera
-IDs novos para as server actions; sem isso, quem estava com a aba aberta
-durante um deploy passa a chamar um ID que não existe mais. Sintoma:
-`UnrecognizedActionError` no console e 404 nos chunks — na prática, um botão
-que simplesmente para de responder. Já aconteceu aqui.
+Cada build gera IDs novos para as server actions. Quem estava com a aba
+aberta durante um deploy passa a chamar um ID que não existe mais — sintoma:
+`UnrecognizedActionError` no console e 404 nos chunks, ou seja, um botão que
+simplesmente para de responder. Já aconteceu aqui.
 
-Se acontecer mesmo assim, `Ctrl+Shift+R` resolve para o usuário.
+Na Vercel isso se ativa em **Settings → Advanced → Skew Protection**. Vale
+ligar antes do primeiro cliente pagante: sem isso, publicar enquanto alguém
+usa o sistema quebra a sessão dessa pessoa no meio de um cálculo.
 
-### Correção do Prisma na Netlify (não remova)
+Quando acontece, `Ctrl+Shift+R` resolve para o usuário.
 
-As funções da Netlify rodam Amazon Linux + OpenSSL 3, e o Prisma carrega o
-engine por caminho em runtime — o tracer do Next não o enxerga. Sem as duas
-correções abaixo, **toda server action devolve 500**, inclusive as que nem
-tocam o banco (o módulo importa o client no topo):
+### Correção do Prisma nas funções (não remova)
+
+As funções rodam Amazon Linux + OpenSSL 3, e o Prisma carrega o engine por
+caminho em runtime — o tracer do Next não o enxerga. Sem as duas correções
+abaixo, **toda server action devolve 500**, inclusive as que nem tocam o
+banco (o módulo importa o client no topo):
 
 1. `binaryTargets = ["native", "rhel-openssl-3.0.x"]` em `schema.prisma`
 2. `outputFileTracingIncludes` em `next.config.ts` copiando
