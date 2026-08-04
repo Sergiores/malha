@@ -444,10 +444,23 @@ mudarem, o motor divergiu da planilha que o engenheiro já valida na prática
   `requireModulo()` decide se a licença ainda vale. Montar o link com o slug
   da URL atual mandaria a análise de dosagem para a rota do Geral e daria
   404.
-- ⚠️ **O `<select>` do cliente é controlado.** Com `defaultValue` a escolha
-  se perdia a cada recálculo — o React remonta o trecho quando o resultado
-  aparece, e a análise era salva sem cliente. O bug só apareceu conferindo o
-  banco; a tela não acusava nada.
+- 🚨 **O React 19 dá `form.reset()` quando a action termina — e isso zera
+  `<select>`.** Comprovado num formulário de teste: depois do "Calcular", o
+  `<input>` e o `<textarea>` voltam com o mesmo valor (o React mantém o
+  atributo em dia), mas o `<select>` controlado não ganha `selected` em
+  nenhuma `<option>`, então o reset escolhe a primeira — "— sem cliente —".
+  Como o estado do React continuava correto, ele não via diferença para
+  reaplicar: a tela mostrava um valor que o DOM já não tinha, e o "Salvar"
+  seguinte mandava vazio. Tornar o campo controlado **não resolve**; a
+  correção é o `useRef` + `useEffect` sem dependências em
+  `src/components/seletor-cliente.tsx`, que reafirma o valor no DOM a cada
+  commit. Vale para qualquer `<select>` que apareça dentro de um form com
+  server action.
+- ⚠️ **`<select>` precisa de `bg-background`, não `bg-transparent`.** A lista
+  aberta é desenhada pelo sistema operacional: no tema escuro o Windows
+  pintava o popup de branco enquanto o texto vinha do `--foreground` quase
+  branco. A regra `select option` em `globals.css` cobre o caso para todo
+  select, inclusive os que ainda não existem.
 
 ### Ciclo de vida da análise — decisões
 

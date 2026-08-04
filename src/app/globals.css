@@ -94,6 +94,20 @@
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
   }
+
+  /*
+   * A lista aberta de um `<select>` é desenhada pelo sistema operacional, e
+   * não herda o fundo da página. No tema escuro isso dava branco no branco:
+   * o Windows pintava o popup de branco e o texto vinha do `--foreground`,
+   * que no escuro é quase branco. As opções ficavam invisíveis.
+   *
+   * Fica aqui, e não em cada tela, porque vale para todo `<select>` nativo —
+   * inclusive os que ainda não existem.
+   */
+  select option {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
 }
 
 @layer components {

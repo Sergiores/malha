@@ -56,7 +56,11 @@
       "Bash(node -e ' *)",
       "PowerShell(vercel ls malha --scope sergios-projects-fae66bf8 -m githubCommitSha=cdc2f9608f5c80a62a9512b3487b676666cd7d1e 2>&1)",
       "PowerShell(npm run lint 2>&1)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "PowerShell(npx tsx tmp-checa-cliente.ts)",
+      "PowerShell(New-Item -ItemType Directory -Force \"src\\\\app\\\\cadastro-tmp-teste\")",
+      "PowerShell(Move-Item \"src\\\\app\\\\tmp-teste-select\\\\page.tsx\" \"src\\\\app\\\\cadastro-tmp-teste\\\\page.tsx\" -Force)",
+      "PowerShell(Move-Item \"src\\\\app\\\\tmp-teste-select\\\\actions.ts\" \"src\\\\app\\\\cadastro-tmp-teste\\\\actions.ts\" -Force)"
     ]
   }
 }
