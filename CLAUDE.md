@@ -24,19 +24,30 @@ Material de origem em `docs/`:
 - **Supabase Auth** — autenticação (e-mail/senha)
 - **Tailwind CSS 3 + shadcn/ui** (estilo "new-york", base neutral)
 - **Zod** — validação
-- **Netlify** — deploy (runtime OpenNext, instalado automaticamente)
+- **Vercel** — deploy, funções na região `gru1` (São Paulo)
 
-> `vercel.json` continua no repo: a Vercel era o plano original e o acesso à
-> conta ficou travado no 2FA. Se um dia voltar, o projeto sobe lá também sem
-> mudança nenhuma.
+> **Por que a região importa mais do que parece.** Na Netlify (plano free) as
+> funções rodavam em `us-east-2` e o banco fica em `sa-east-1`. Medido em
+> produção: um `SELECT 1` levava **624 ms** — só ida e volta, sem trabalho.
+> Localmente, 140 ms. Toda navegação pagava esse pedágio 3 ou 4 vezes.
+> A Vercel deixa escolher a região (uma no plano Hobby), e `gru1` fica ao
+> lado do banco.
+>
+> `netlify.toml` continua no repo como caminho de volta. Se voltar a usá-lo,
+> lembre do `NETLIFY_NEXT_SKEW_PROTECTION`.
 >
 > **Cloudflare Workers foi avaliado e descartado**: exigiria trocar
 > `PrismaClient` por `@prisma/adapter-pg` e provavelmente provisionar um
 > Hyperdrive, porque Workers não tem runtime Node completo. Some-se a isso o
 > conflito entre `?pgbouncer=true` (parâmetro do motor do Prisma, ignorado
 > pelo driver `pg`) e o pooler do Supabase em modo transaction, que não
-> aceita prepared statements. Netlify e Vercel rodam Node, então o Prisma
-> funciona igual ao ambiente local.
+> aceita prepared statements.
+>
+> O projeto **mplace** (`D:\Projetos\PersonalGestorMPlace`) roda em Workers,
+> mas por outro caminho: usa `supabase-js` (API REST, HTTP) em vez de ORM
+> com conexão TCP. O **PersonalComissao** usa `supabase-js` na Vercel. O
+> Malha é o único com Prisma — a troca daria migrations versionadas e tipos
+> gerados, ao custo de precisar de runtime Node e de conexão ao banco.
 
 > A stack foi copiada do projeto **Bolicho** (`D:\Projetos\Bolicho\Bolicho`),
 > que já roda em produção. Quando estiver em dúvida sobre um padrão, olhe lá
