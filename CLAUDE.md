@@ -459,10 +459,16 @@ mudarem, o motor divergiu da planilha que o engenheiro já valida na prática
   aprovação no formulário — seria data declarada, não registrada.
 - **`validoAte` é `@db.Date`**, gravada por `dataUtc()`, mesma defesa de fuso
   das licenças. Vencida aparece em vermelho no laudo e na lista.
-- **WhatsApp só de análise aprovada**, e manda **texto, não link**: o laudo
-  completo exige login, e mandar URL que o cliente não abre é pior que não
-  mandar. `src/lib/whatsapp.ts` monta o resumo (traço/consumo/custo, ou
-  MF/enquadramento) e diz explicitamente que a conferência formal é o PDF.
+- **Envio por WhatsApp foi retirado** (commit da remoção; o
+  `src/lib/whatsapp.ts` original está no histórico). O motivo: `wa.me` só
+  aceita o parâmetro `text` — não existe anexo por link. E o laudo em PDF
+  nasce da impressão do navegador, que não devolve `Blob` ao JavaScript,
+  então nem `navigator.share({files})` tem o que compartilhar. Mandar só
+  resumo em texto entrega menos do que o engenheiro espera do botão.
+  Para voltar, a decisão pendente é entre **link público com token**
+  (barato, mas expõe o laudo a quem tiver a URL) e **gerar o PDF de fato**
+  (`@react-pdf/renderer` obriga a reescrever o laudo inteiro, e aí o layout
+  passa a existir em duas versões que podem divergir).
 - ⚠️ **Parecer e validade são campos controlados**, pelo mesmo motivo do
   `<select>` de cliente: o botão "Calcular" reenvia o formulário, e perder um
   parecer longo num recálculo seria o pior defeito possível desse campo.

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Copy, MessageCircle, Pencil, Printer, Trash2 } from "lucide-react";
+import { Copy, Pencil, Printer, Trash2 } from "lucide-react";
 import type { StatusAnalise } from "@prisma/client";
 import {
   alterarStatus,
@@ -16,14 +16,11 @@ export function AcoesAnalise({
   status,
   slugModulo,
   slugCalculadora,
-  linkZap,
 }: {
   id: number;
   status: StatusAnalise;
   slugModulo: string;
   slugCalculadora: string;
-  /** Só vem preenchido quando a análise está aprovada. */
-  linkZap: string | null;
 }) {
   const base = `/m/${slugModulo}/${slugCalculadora}`;
   const rascunho = status === "RASCUNHO";
@@ -48,19 +45,6 @@ export function AcoesAnalise({
           Copiar
         </Button>
       </Link>
-
-      {linkZap && (
-        <a href={linkZap} target="_blank" rel="noopener noreferrer">
-          <Button
-            variant="outline"
-            size="sm"
-            className="varredura border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400"
-          >
-            <MessageCircle className="h-4 w-4" />
-            WhatsApp
-          </Button>
-        </a>
-      )}
 
       <Button
         variant="outline"

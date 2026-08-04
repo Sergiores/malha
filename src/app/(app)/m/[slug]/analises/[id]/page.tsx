@@ -14,7 +14,6 @@ import { requireModulo, hojeUtc } from "@/lib/modulo";
 import { STATUS_INFO, dataHoraBr } from "@/lib/analise";
 import { formatarDocumento } from "@/lib/documento";
 import { dataBr } from "@/lib/utils";
-import { linkWhatsApp, textoWhatsApp } from "@/lib/whatsapp";
 import type { DosagemCaaResultado } from "@/core/calculators/dosagem-caa/calc";
 import type { DosagemCaaInput } from "@/core/calculators/dosagem-caa/schema";
 import type { GranulometriaResultado } from "@/core/calculators/granulometria-areias/calc";
@@ -71,25 +70,6 @@ export default async function LaudoPage({
   // do laudo é escolhido pelo slug da calculadora, e não por um formato
   // único de resultado.
   const ehDosagem = analise.calculadora.slug === "dosagem-caa";
-
-  // Envio por WhatsApp só de análise aprovada — o que circula por mensagem
-  // costuma virar decisão de obra, e rascunho não deve virar.
-  const linkZap =
-    analise.status === "APROVADA"
-      ? linkWhatsApp(
-          textoWhatsApp({
-            id: analise.id,
-            titulo: analise.titulo,
-            calculadoraSlug: analise.calculadora.slug,
-            calculadoraNome: analise.calculadora.nome,
-            clienteNome: analise.cliente?.nome ?? null,
-            parecer: analise.parecer,
-            validoAte: analise.validoAte,
-            aprovadaEm: analise.aprovadaEm,
-            resultados: analise.resultados,
-          })
-        )
-      : null;
 
   const vencido =
     analise.validoAte !== null && analise.validoAte < hojeUtc();
@@ -167,7 +147,6 @@ export default async function LaudoPage({
         status={analise.status}
         slugModulo={slug}
         slugCalculadora={analise.calculadora.slug}
-        linkZap={linkZap}
       />
 
       {analise.cliente && (

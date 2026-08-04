@@ -35,7 +35,28 @@
       "PowerShell(npx tsx tmp-checa-laudo.ts)",
       "PowerShell(npx tsc --noEmit)",
       "Bash(git commit *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "PowerShell(git push origin main 2>&1)",
+      "PowerShell($r = Invoke-WebRequest -Uri \"https://malha.personalgestor.com.br/login\" -UseBasicParsing; $id = [regex]::Match\\($r.Content, '/_next/static/\\([^/]+\\)/_buildManifest'\\).Groups[1].Value; \"status=$\\($r.StatusCode\\) buildId=$id\")",
+      "PowerShell($r = Invoke-WebRequest -Uri \"https://malha.personalgestor.com.br/login\" -UseBasicParsing; [regex]::Matches\\($r.Content, '/_next/static/[^\"]+'\\) | Select-Object -First 5 -ExpandProperty Value)",
+      "PowerShell(gh api repos/Sergiores/malha/deployments --jq '.[0:3][] | \"\\\\\\(.id\\) \\\\\\(.sha[0:7]\\) \\\\\\(.environment\\) \\\\\\(.created_at\\)\"' 2>&1)",
+      "PowerShell($r = Invoke-WebRequest -Uri \"https://malha.personalgestor.com.br/login\" -UseBasicParsing; $r.Headers.GetEnumerator\\(\\) | ForEach-Object { \"$\\($_.Key\\): $\\($_.Value\\)\" })",
+      "PowerShell($u = \"https://malha.personalgestor.com.br/_next/static/chunks/app/\\(app\\)/m/%5Bslug%5D/analises/%5Bid%5D/page-1d61b74e1f26aeee.js\"; try { $r = Invoke-WebRequest -Uri $u -UseBasicParsing; \"status=$\\($r.StatusCode\\) bytes=$\\($r.RawContentLength\\)\" } catch { \"erro=$\\($_.Exception.Response.StatusCode.value__\\)\" })",
+      "PowerShell(git ls-remote origin refs/heads/main)",
+      "PowerShell(vercel --version)",
+      "PowerShell(vercel whoami)",
+      "PowerShell(vercel project ls 2>&1)",
+      "PowerShell(vercel ls malha --scope sergios-projects-fae66bf8 2>&1)",
+      "PowerShell(vercel inspect https://malha-7blszl42d-sergios-projects-fae66bf8.vercel.app --scope sergios-projects-fae66bf8 2>&1)",
+      "PowerShell(vercel inspect https://malha-7blszl42d-sergios-projects-fae66bf8.vercel.app --scope sergios-projects-fae66bf8 --json 2>$null | ConvertFrom-Json | ForEach-Object { $_.meta | Select-Object githubCommitSha, githubCommitMessage, githubCommitRef })",
+      "PowerShell(vercel inspect https://malha-7blszl42d-sergios-projects-fae66bf8.vercel.app --scope sergios-projects-fae66bf8 --json > \"$env:TEMP\\\\dpl.json\" 2>$null; $o = Get-Content \"$env:TEMP\\\\dpl.json\" -Raw | ConvertFrom-Json; $o.meta | ConvertTo-Json -Depth 3)",
+      "PowerShell(Get-Content \"$env:TEMP\\\\dpl.json\" -Raw | Select-Object -First 1 | ForEach-Object { $_.Substring\\(0, [Math]::Min\\(600, $_.Length\\)\\) })",
+      "Read(//c/Users/SRGIO~1/AppData/Local/Temp/**)",
+      "Bash(python -c ' *)",
+      "Bash(node -e ' *)",
+      "PowerShell(vercel ls malha --scope sergios-projects-fae66bf8 -m githubCommitSha=cdc2f9608f5c80a62a9512b3487b676666cd7d1e 2>&1)",
+      "PowerShell(npm run lint 2>&1)",
+      "Bash(git push *)"
     ]
   }
 }
