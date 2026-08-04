@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { contaComOrganizacao } from "@/lib/organizacao";
@@ -84,25 +85,46 @@ export const meusModulos = cache(async function meusModulos() {
 });
 
 /**
- * Calculadoras ativas, agrupadas por módulo. O menu lateral usa para montar
- * os sub-itens de cada módulo liberado.
+ * Calculadoras ativas por módulo, para o menu lateral.
+ *
+ * Cache entre requisições, não só dentro de uma: o catálogo é o mesmo para
+ * todos os clientes e só muda quando o registry é sincronizado. Com o banco
+ * a ~625 ms de distância das funções, evitar essa ida é economia direta em
+ * TODA navegação.
+ *
+ * A invalidação é por tag — `sincronizarModulos()` a dispara.
  */
 export const calculadorasPorModulo = cache(
   async function calculadorasPorModulo() {
+    const calcs = await lerCalculadoras();
+
+    const mapa = new Map<string, { slug: string; nome: string }[]>();
+    for (const c of calcs) {
+      const lista = mapa.get(c.moduloSlug) ?? [];
+      lista.push({ slug: c.slug, nome: c.nome });
+      mapa.set(c.moduloSlug, lista);
+    }
+    return mapa;
+  }
+);
+
+export const TAG_CATALOGO = "catalogo-modulos";
+
+const lerCalculadoras = unstable_cache(
+  async () => {
     const calcs = await prisma.calculadora.findMany({
       where: { ativa: true, modulo: { ativo: true } },
       orderBy: { ordem: "asc" },
       select: { slug: true, nome: true, modulo: { select: { slug: true } } },
     });
-
-    const mapa = new Map<string, { slug: string; nome: string }[]>();
-    for (const c of calcs) {
-      const lista = mapa.get(c.modulo.slug) ?? [];
-      lista.push({ slug: c.slug, nome: c.nome });
-      mapa.set(c.modulo.slug, lista);
-    }
-    return mapa;
-  }
+    return calcs.map((c) => ({
+      slug: c.slug,
+      nome: c.nome,
+      moduloSlug: c.modulo.slug,
+    }));
+  },
+  ["calculadoras-por-modulo"],
+  { tags: [TAG_CATALOGO], revalidate: 3600 }
 );
 
 /**

@@ -1,8 +1,39 @@
 import { cache } from "react";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import {
+  HEADER_USER_ID,
+  HEADER_USER_EMAIL,
+} from "@/lib/supabase/middleware";
 import { prisma } from "@/lib/prisma";
 import { gerarCodigoConvite } from "@/lib/utils";
+
+/**
+ * Usuário da requisição atual.
+ *
+ * O middleware já validou o token contra o Supabase e publicou a identidade
+ * em headers que ele mesmo reescreve — nada que venha do cliente sobrevive
+ * ali. Reaproveitar isso evita uma segunda chamada de rede que custava
+ * ~450 ms em produção, com as funções em Ohio e o Auth em São Paulo.
+ *
+ * O `getUser()` continua como caminho alternativo para quando o header não
+ * existir (rota fora do matcher do middleware, por exemplo): mais lento,
+ * porém correto.
+ */
+const usuarioDaRequisicao = cache(async function usuarioDaRequisicao() {
+  const h = await headers();
+  const id = h.get(HEADER_USER_ID);
+  if (id) {
+    return { id, email: h.get(HEADER_USER_EMAIL) ?? undefined };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user ? { id: user.id, email: user.email } : null;
+});
 
 /**
  * Conta + organização do usuário logado, em UMA query.
@@ -22,11 +53,7 @@ import { gerarCodigoConvite } from "@/lib/utils";
  * voltam junto.
  */
 export const contaComOrganizacao = cache(async function contaComOrganizacao() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await usuarioDaRequisicao();
   if (!user) redirect("/login");
 
   const conta = await prisma.conta.findUnique({
@@ -40,11 +67,13 @@ export const contaComOrganizacao = cache(async function contaComOrganizacao() {
     },
   });
 
-  // Conta inexistente ou sem organização: caminho frio, só na primeira visita
-  // e em usuários criados por fora (Admin API, seed).
-  if (!conta) return criarContaEOrganizacao(user.id, user.email, user.user_metadata?.nome);
+  // Conta inexistente: caminho frio, só na primeira visita e em usuários
+  // criados por fora (Admin API, seed). Aqui vale pagar a chamada extra ao
+  // Auth para pegar o nome do metadata.
+  if (!conta) return criarContaEOrganizacao(user.id, user.email);
 
   if (!conta.ativa) {
+    const supabase = await createClient();
     await supabase.auth.signOut();
     redirect("/login?error=conta_inativa");
   }
@@ -76,9 +105,16 @@ export const organizacaoPessoal = cache(async function organizacaoPessoal() {
 
 async function criarContaEOrganizacao(
   authUserId: string,
-  email: string | undefined,
-  nome: unknown
+  email: string | undefined
 ) {
+  // Caminho frio: só aqui buscamos o usuário completo, para aproveitar o
+  // nome que veio do cadastro.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const nome = user?.user_metadata?.nome;
+
   const conta = await prisma.conta.create({
     data: {
       authUserId,
@@ -91,11 +127,11 @@ async function criarContaEOrganizacao(
     conta.id,
     conta.nome ?? conta.email
   );
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return { user: user!, conta, organizacao };
+  return {
+    user: { id: authUserId, email },
+    conta,
+    organizacao,
+  };
 }
 
 /** Módulos que toda organização recebe ao nascer, sem prazo. */

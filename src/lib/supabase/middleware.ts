@@ -18,8 +18,24 @@ const ROTAS_PUBLICAS = [
   "/auth",
 ];
 
+/**
+ * Header em que o middleware publica a identidade já verificada, para o
+ * Server Component não precisar validar o token de novo.
+ *
+ * O nome tem prefixo próprio e o valor é SEMPRE reescrito abaixo — nunca
+ * confie no que veio do cliente, senão qualquer um se passa por outro
+ * usuário mandando o header na requisição.
+ */
+export const HEADER_USER_ID = "x-malha-user-id";
+export const HEADER_USER_EMAIL = "x-malha-user-email";
+
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  // Começa limpando o que o cliente possa ter mandado.
+  const headers = new Headers(request.headers);
+  headers.delete(HEADER_USER_ID);
+  headers.delete(HEADER_USER_EMAIL);
+
+  let supabaseResponse = NextResponse.next({ request: { headers } });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,7 +49,7 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = NextResponse.next({ request: { headers } });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -45,6 +61,14 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Identidade já validada pelo Supabase — repassa para o Server Component
+  // não gastar outra chamada de rede confirmando o mesmo token.
+  if (user) {
+    headers.set(HEADER_USER_ID, user.id);
+    if (user.email) headers.set(HEADER_USER_EMAIL, user.email);
+    supabaseResponse = NextResponse.next({ request: { headers } });
+  }
 
   const { pathname } = request.nextUrl;
   const ehPublica =

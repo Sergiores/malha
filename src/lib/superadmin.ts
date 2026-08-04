@@ -1,7 +1,6 @@
 import { cache } from "react";
-import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { prisma } from "@/lib/prisma";
+import { notFound } from "next/navigation";
+import { contaComOrganizacao } from "@/lib/organizacao";
 
 /**
  * E-mail com acesso a /superadmin.
@@ -21,26 +20,14 @@ export function isSuperadmin(email: string | null | undefined): boolean {
  * que não confirma sequer que a rota existe.
  */
 export const requireSuperadmin = cache(async function requireSuperadmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Reaproveita a identidade que o middleware já validou — ver
+  // `usuarioDaRequisicao` em src/lib/organizacao.ts.
+  const { user } = await contaComOrganizacao();
 
-  if (!user) redirect("/login");
   if (!isSuperadmin(user.email)) notFound();
 
-  // Mesma regra da área logada: senha inicial pendente trava tudo, e o
-  // painel que controla o licenciamento de todos os clientes é o último
-  // lugar onde abrir exceção.
-  const conta = await prisma.conta.findUnique({
-    where: { authUserId: user.id },
-    select: { ativa: true, trocarSenha: true },
-  });
-  if (conta && !conta.ativa) {
-    await supabase.auth.signOut();
-    redirect("/login?error=conta_inativa");
-  }
-  if (conta?.trocarSenha) redirect("/redefinir-senha");
-
+  // `contaComOrganizacao` já barrou conta inativa e troca de senha pendente:
+  // o painel que controla o licenciamento de todos os clientes é o último
+  // lugar onde abrir exceção a essas regras.
   return { user };
 });
