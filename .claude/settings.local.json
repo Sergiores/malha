@@ -33,7 +33,9 @@
       "PowerShell(npm run build 2>&1)",
       "PowerShell(npx prisma migrate status 2>&1)",
       "PowerShell(npx tsx tmp-checa-laudo.ts)",
-      "PowerShell(npx tsc --noEmit)"
+      "PowerShell(npx tsc --noEmit)",
+      "Bash(git commit *)",
+      "Bash(git add *)"
     ]
   }
 }

@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import { requireModulo } from "@/lib/modulo";
 import { contaComOrganizacao } from "@/lib/organizacao";
 import { idClienteValido } from "@/lib/cliente";
@@ -17,7 +16,6 @@ import {
   melhorTeor,
   type GranulometriaResultado,
 } from "@/core/calculators/granulometria-areias/calc";
-import type { Prisma } from "@prisma/client";
 
 const MODULO = "concreto-fresco-endurecido";
 const CALCULADORA = "granulometria-areias";
@@ -96,7 +94,6 @@ export async function salvarGranul(
   formData: FormData
 ): Promise<EstadoGranulometria> {
   await requireModulo(MODULO);
-  const { conta, organizacao } = await contaComOrganizacao();
 
   const parsed = granulometriaSchema.safeParse(lerFormulario(formData));
   if (!parsed.success) {
@@ -117,6 +114,8 @@ export async function salvarGranul(
   });
   if (!r.ok) return { ok: false, error: r.error };
 
+  // Inclui o laudo: salvar também pode ser editar um rascunho já existente.
+  revalidatePath(`/m/${MODULO}/analises/${r.id}`);
   revalidatePath(`/m/${MODULO}/analises`);
   revalidatePath("/dashboard");
   redirect(`/m/${MODULO}/analises/${r.id}`);

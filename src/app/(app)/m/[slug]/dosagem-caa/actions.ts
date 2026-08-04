@@ -15,7 +15,7 @@ import {
   calcularDosagemCaa,
   type DosagemCaaResultado,
 } from "@/core/calculators/dosagem-caa/calc";
-import type { Prisma, StatusAnalise } from "@prisma/client";
+import type { StatusAnalise } from "@prisma/client";
 
 const MODULO = "concreto-fresco-endurecido";
 const CALCULADORA = "dosagem-caa";
@@ -88,7 +88,6 @@ export async function salvarAnalise(
   formData: FormData
 ): Promise<EstadoCalculo> {
   await requireModulo(MODULO);
-  const { conta, organizacao } = await contaComOrganizacao();
 
   const parsed = dosagemCaaSchema.safeParse(lerFormulario(formData));
   if (!parsed.success) {
@@ -106,6 +105,9 @@ export async function salvarAnalise(
   });
   if (!r.ok) return { ok: false, error: r.error };
 
+  // O laudo entra aqui porque salvar também pode ser *editar* um rascunho —
+  // sem isso o engenheiro salvaria a correção e cairia nos números antigos.
+  revalidatePath(`/m/${MODULO}/analises/${r.id}`);
   revalidatePath(`/m/${MODULO}/analises`);
   revalidatePath("/dashboard");
   redirect(`/m/${MODULO}/analises/${r.id}`);
