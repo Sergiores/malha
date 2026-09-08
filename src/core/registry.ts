@@ -77,6 +77,12 @@ export const MODULOS: ModuloDef[] = [
         descricao:
           "Mistura de duas areias com curva granulométrica e enquadramento nas zonas da NBR 7211.",
       },
+      {
+        slug: "idade-concreto",
+        nome: "Idade do Concreto",
+        descricao:
+          "Resistência efetiva antes dos 28 dias pela NBR 6118, para decidir desforma e liberação de carga.",
+      },
     ],
   },
 ];

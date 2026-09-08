@@ -14,6 +14,18 @@ organização, com data de vencimento controlada pelo superadmin.
 Material de origem em `docs/`:
 - `1. Planilha Dosagem CAA.xlsx` — dosagem de Concreto Autoadensável (Tutikian)
 - `2. Planilha Idade do Concreto.xlsx` — NBR 6118 §12.3.3
+- `3. Dosagem de Concreto - CAA Tutikian.xlsx` — a planilha 1 **idêntica**
+  (conferida célula a célula) mais uma aba de granulometria e uma aba de
+  resumo vazia. Não há nenhuma referência entre as abas: a
+  complementaridade que o cliente descreve mora no processo dele, não no
+  arquivo. A ideia dele, gravada em áudio no mesmo diretório: a granulometria
+  deve **sugerir o teor de argamassa** da dosagem. A regra dessa sugestão
+  ainda não existe em lugar nenhum e precisa vir dele.
+- `Programa Consolo - Alunos Inbec.xlsx` — consolo curto e muito curto pela
+  NBR 9062. 🚨 **Autoria de terceiro, marcada "para uso acadêmico" e
+  protegida por senha.** Análise completa e as 11 questões pendentes em
+  `docs/Consolo NBR 9062 - estudo de viabilidade.html`. Não implementar antes
+  da decisão sobre licenciamento (achado A-11).
 - `WhatsApp Image 2026-08-02 at 21.23.01.jpeg` — placa de base com momento
   fletor (NBR 8800 + Bellei). **O `.xlsx` desta ainda não foi fornecido.**
 
@@ -415,6 +427,45 @@ mudarem, o motor divergiu da planilha que o engenheiro já valida na prática
   planilha estiver certa, o teste de paridade é que vai acusar.
 - O laudo escolhe o corpo pelo **slug da calculadora** — cada uma tem seu
   formato de resultado, e não há um schema único para todas.
+
+### Idade do Concreto — decisões
+
+- **β₁ é limitado a 1,0.** A expressão `β₁ = exp[s·(1−√(28/t))]` descreve o
+  ganho até os 28 dias; passados eles ela continua crescendo e, com t = 60
+  dias e CP II, devolve 1,082 — 8% de resistência que a norma não autoriza
+  contar. A planilha entregava esse número sem avisar. Aqui o corte é
+  explícito e vira alerta no laudo, com o valor bruto guardado em
+  `beta1Bruto` só para explicar de onde veio o limite.
+- **A carga é opcional e a unidade é escolhida.** A planilha imprimia
+  "kN, kN/m ou kN/m²" sem saber qual era. Quem só quer a resistência efetiva
+  não precisa inventar carga.
+- **A curva de 1 a 28 dias vai no snapshot**, não é recalculada na exibição —
+  mesma regra das outras calculadoras.
+- O ponto destacado no gráfico some quando a idade passa de 28 dias. É
+  correto: a curva termina ali e inventar um ponto fora dela mentiria.
+
+### Apresentação das calculadoras — dois registros
+
+Quando a terceira calculadora chegou, dois `if` binários deixaram de fechar.
+Ambos viraram registro por slug:
+
+- **`src/components/laudo-corpo.tsx`** — o corpo do laudo (premissas +
+  resultado). Antes era `ehDosagem ? A : B` dentro da página do laudo. O cast
+  de `entradas`/`resultados` (Json no banco, portanto `unknown`) acontece uma
+  vez, aqui. Calculadora sem corpo registrado mostra um aviso em vez de
+  renderizar o laudo de outra.
+- **`src/core/apresentacao.ts`** — o número de resumo na lista de análises. A
+  coluna era fixa em "Custo/m³", que só existe na dosagem; agora cada
+  calculadora declara o seu (custo, módulo de finura, fck efetivo) e quem não
+  declarar deixa a célula vazia. Sem JSX de propósito: roda em Server
+  Components de listagem.
+
+### `<select>` dentro de form com server action
+
+⚠️ Use **`src/components/select-campo.tsx`**, nunca um `<select>` cru. Ele
+concentra as duas armadilhas já pagas: o `form.reset()` do React 19 que zera a
+escolha (ver a seção de Clientes) e o `bg-background` que a lista aberta exige
+no tema escuro. O `seletor-cliente.tsx` também passou a usá-lo.
 
 ### Módulo Geral e Clientes — decisões
 

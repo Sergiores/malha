@@ -3,7 +3,8 @@ import { FileText, Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { contaComOrganizacao } from "@/lib/organizacao";
 import { requireModulo, hojeUtc } from "@/lib/modulo";
-import { STATUS_INFO, brl, dataHoraBr } from "@/lib/analise";
+import { STATUS_INFO, dataHoraBr } from "@/lib/analise";
+import { destaqueDaAnalise } from "@/core/apresentacao";
 import { dataBr } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,8 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-type ResumoResultado = { custoTotal?: number };
 
 /**
  * Análises do MÓDULO — não um histórico global. Cada módulo tem as suas, e
@@ -38,7 +37,7 @@ export default async function AnalisesDoModuloPage({
       },
       orderBy: { createdAt: "desc" },
       include: {
-        calculadora: { select: { nome: true } },
+        calculadora: { select: { nome: true, slug: true } },
         cliente: { select: { nome: true } },
       },
       take: 200,
@@ -96,7 +95,7 @@ export default async function AnalisesDoModuloPage({
                     <th className="px-4 py-2 font-medium">Calculadora</th>
                     <th className="px-4 py-2 font-medium">Data</th>
                     <th className="px-4 py-2 text-right font-medium">
-                      Custo/m³
+                      Resultado
                     </th>
                     <th className="px-4 py-2 font-medium">Validade</th>
                     <th className="px-4 py-2 font-medium">Status</th>
@@ -104,7 +103,12 @@ export default async function AnalisesDoModuloPage({
                 </thead>
                 <tbody>
                   {analises.map((a) => {
-                    const r = a.resultados as ResumoResultado | null;
+                    // Cada calculadora declara o próprio número de resumo;
+                    // "custo/m³" só existe na dosagem.
+                    const d = destaqueDaAnalise(
+                      a.calculadora.slug,
+                      a.resultados
+                    );
                     const s = STATUS_INFO[a.status];
                     const vencido =
                       a.validoAte !== null && a.validoAte < hoje;
@@ -131,9 +135,16 @@ export default async function AnalisesDoModuloPage({
                           {dataHoraBr(a.createdAt)}
                         </td>
                         <td className="px-4 py-2 text-right tabular-nums">
-                          {typeof r?.custoTotal === "number"
-                            ? brl(r.custoTotal)
-                            : "—"}
+                          {d ? (
+                            <>
+                              {d.valor}
+                              <p className="text-xs font-normal normal-case text-muted-foreground">
+                                {d.rotulo}
+                              </p>
+                            </>
+                          ) : (
+                            "—"
+                          )}
                         </td>
                         <td
                           className={`px-4 py-2 tabular-nums ${

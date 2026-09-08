@@ -60,7 +60,16 @@
       "PowerShell(npx tsx tmp-checa-cliente.ts)",
       "PowerShell(New-Item -ItemType Directory -Force \"src\\\\app\\\\cadastro-tmp-teste\")",
       "PowerShell(Move-Item \"src\\\\app\\\\tmp-teste-select\\\\page.tsx\" \"src\\\\app\\\\cadastro-tmp-teste\\\\page.tsx\" -Force)",
-      "PowerShell(Move-Item \"src\\\\app\\\\tmp-teste-select\\\\actions.ts\" \"src\\\\app\\\\cadastro-tmp-teste\\\\actions.ts\" -Force)"
+      "PowerShell(Move-Item \"src\\\\app\\\\tmp-teste-select\\\\actions.ts\" \"src\\\\app\\\\cadastro-tmp-teste\\\\actions.ts\" -Force)",
+      "PowerShell(python -c \"import openpyxl, sys; print\\('openpyxl', openpyxl.__version__, 'py', sys.version\\)\" 2>&1)",
+      "PowerShell(pip install openpyxl --quiet 2>&1)",
+      "PowerShell(python -c \"import openpyxl; print\\('ok', openpyxl.__version__\\)\")",
+      "PowerShell(python -m pip install openpyxl --quiet 2>&1)",
+      "PowerShell($s=\"C:\\\\Users\\\\SRGIO~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Projetos-PersonalMalha\\\\166da038-dd8b-478a-9f65-8e522ba06693\\\\scratchpad\"; python \"$s\\\\dump.py\" \"D:\\\\Projetos\\\\PersonalMalha\\\\docs\\\\3. Dosagem de Concreto - CAA Tutikian.xlsx\" > \"$s\\\\p3.txt\" 2>&1; \\(Get-Content \"$s\\\\p3.txt\" | Measure-Object -Line\\).Lines)",
+      "PowerShell($s=\"C:\\\\Users\\\\SRGIO~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Projetos-PersonalMalha\\\\166da038-dd8b-478a-9f65-8e522ba06693\\\\scratchpad\"; python \"$s\\\\dump.py\" \"D:\\\\Projetos\\\\PersonalMalha\\\\docs\\\\1. Planilha Dosagem CAA.xlsx\" > \"$s\\\\p1.txt\" 2>&1; Get-Content \"$s\\\\p1.txt\")",
+      "PowerShell($s=\"C:\\\\Users\\\\SRGIO~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Projetos-PersonalMalha\\\\166da038-dd8b-478a-9f65-8e522ba06693\\\\scratchpad\"; python \"$s\\\\compara.py\" 2>&1)",
+      "PowerShell($s=\"C:\\\\Users\\\\SRGIO~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Projetos-PersonalMalha\\\\166da038-dd8b-478a-9f65-8e522ba06693\\\\scratchpad\"; python \"$s\\\\extras.py\" 2>&1)",
+      "PowerShell(python -m pip install faster-whisper 2>&1)"
     ]
   }
 }

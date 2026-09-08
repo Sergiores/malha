@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { UserPlus, Users } from "lucide-react";
 import { formatarDocumento } from "@/lib/documento";
+import { SelectCampo } from "@/components/select-campo";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -47,26 +48,6 @@ export function SeletorCliente({
     setValor(idSelecionado ? String(idSelecionado) : "");
   }, [idSelecionado]);
 
-  /*
-   * ⚠️ Reafirma a escolha no DOM depois de cada commit.
-   *
-   * O React 19 dá `form.reset()` no formulário quando a action termina. Para
-   * `<input>` e `<textarea>` isso é inofensivo — ele mantém o atributo em dia
-   * e o reset devolve o mesmo valor. Já o `<select>` controlado não ganha
-   * `selected` em nenhuma `<option>`, então o reset volta para a primeira:
-   * "— sem cliente —". E como o estado do React continuava correto, ele não
-   * via diferença para reaplicar.
-   *
-   * O resultado era invisível na tela e visível só no banco: clicar em
-   * "Calcular" apagava o cliente do DOM, e o "Salvar" seguinte gravava a
-   * análise sem cliente nenhum. Sem dependências de propósito — precisa
-   * rodar em todo commit, inclusive nos que só o reset provocou.
-   */
-  const ref = useRef<HTMLSelectElement>(null);
-  useEffect(() => {
-    if (ref.current && ref.current.value !== valor) ref.current.value = valor;
-  });
-
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -95,13 +76,11 @@ export function SeletorCliente({
             <Label htmlFor="idCliente" className="sr-only">
               Cliente
             </Label>
-            <select
-              ref={ref}
+            <SelectCampo
               id="idCliente"
               name="idCliente"
               value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              onChange={setValor}
             >
               <option value="">— sem cliente —</option>
               {clientes.map((c) => (
@@ -111,7 +90,7 @@ export function SeletorCliente({
                   {c.cidade ? ` · ${c.cidade}${c.uf ? `/${c.uf}` : ""}` : ""}
                 </option>
               ))}
-            </select>
+            </SelectCampo>
             <p className="text-xs text-muted-foreground">
               <Link
                 href="/m/geral/clientes/novo"

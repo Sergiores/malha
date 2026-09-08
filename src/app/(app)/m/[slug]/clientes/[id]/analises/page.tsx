@@ -4,7 +4,8 @@ import { ArrowLeft, FileText, Pencil } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireModulo, hojeUtc } from "@/lib/modulo";
 import { contaComOrganizacao } from "@/lib/organizacao";
-import { STATUS_INFO, brl, dataHoraBr } from "@/lib/analise";
+import { STATUS_INFO, dataHoraBr } from "@/lib/analise";
+import { destaqueDaAnalise } from "@/core/apresentacao";
 import { dataBr } from "@/lib/utils";
 import { formatarDocumento } from "@/lib/documento";
 import { Button } from "@/components/ui/button";
@@ -15,8 +16,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-type ResumoResultado = { custoTotal?: number };
 
 /**
  * Análises de um cliente — atravessa os módulos de propósito.
@@ -55,7 +54,11 @@ export default async function AnalisesDoClientePage({
         take: 300,
         include: {
           calculadora: {
-            select: { nome: true, modulo: { select: { slug: true, nome: true } } },
+            select: {
+              nome: true,
+              slug: true,
+              modulo: { select: { slug: true, nome: true } },
+            },
           },
         },
       },
@@ -120,7 +123,7 @@ export default async function AnalisesDoClientePage({
                     <th className="px-4 py-2 font-medium">Calculadora</th>
                     <th className="px-4 py-2 font-medium">Data</th>
                     <th className="px-4 py-2 text-right font-medium">
-                      Custo/m³
+                      Resultado
                     </th>
                     <th className="px-4 py-2 font-medium">Validade</th>
                     <th className="px-4 py-2 font-medium">Status</th>
@@ -128,7 +131,10 @@ export default async function AnalisesDoClientePage({
                 </thead>
                 <tbody>
                   {cliente.analises.map((a) => {
-                    const r = a.resultados as ResumoResultado | null;
+                    const d = destaqueDaAnalise(
+                      a.calculadora.slug,
+                      a.resultados
+                    );
                     const s = STATUS_INFO[a.status];
                     const vencido = a.validoAte !== null && a.validoAte < hoje;
                     return (
@@ -152,9 +158,16 @@ export default async function AnalisesDoClientePage({
                           {dataHoraBr(a.createdAt)}
                         </td>
                         <td className="px-4 py-2 text-right tabular-nums">
-                          {typeof r?.custoTotal === "number"
-                            ? brl(r.custoTotal)
-                            : "—"}
+                          {d ? (
+                            <>
+                              {d.valor}
+                              <p className="text-xs font-normal text-muted-foreground">
+                                {d.rotulo}
+                              </p>
+                            </>
+                          ) : (
+                            "—"
+                          )}
                         </td>
                         <td
                           className={`px-4 py-2 tabular-nums ${

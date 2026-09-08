@@ -1,4 +1,8 @@
 import type { Config } from "tailwindcss";
+// Import, não `require()`: o Node carrega este arquivo como ESM e `require`
+// não existe nesse escopo — o dev server morria ao compilar a primeira
+// página, com "require is not defined" vindo do Tailwind.
+import animate from "tailwindcss-animate";
 
 const config: Config = {
   darkMode: ["class"],
@@ -56,7 +60,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [animate],
 };
 
 export default config;

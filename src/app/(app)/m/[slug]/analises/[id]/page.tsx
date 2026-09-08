@@ -14,12 +14,7 @@ import { requireModulo, hojeUtc } from "@/lib/modulo";
 import { STATUS_INFO, dataHoraBr } from "@/lib/analise";
 import { formatarDocumento } from "@/lib/documento";
 import { dataBr } from "@/lib/utils";
-import type { DosagemCaaResultado } from "@/core/calculators/dosagem-caa/calc";
-import type { DosagemCaaInput } from "@/core/calculators/dosagem-caa/schema";
-import type { GranulometriaResultado } from "@/core/calculators/granulometria-areias/calc";
-import type { GranulometriaInput } from "@/core/calculators/granulometria-areias/schema";
-import { ResultadoDosagem } from "@/components/resultado-dosagem";
-import { ResultadoGranulometria } from "@/components/resultado-granulometria";
+import { corpoDoLaudo } from "@/components/laudo-corpo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AcoesAnalise } from "./acoes-analise";
@@ -65,11 +60,12 @@ export default async function LaudoPage({
   if (!analise) notFound();
 
   const s = STATUS_INFO[analise.status];
+
   // Snapshot: exibimos o que foi gravado, não um recálculo. Um laudo emitido
   // em março tem de mostrar os mesmos números em dezembro. Por isso o corpo
   // do laudo é escolhido pelo slug da calculadora, e não por um formato
-  // único de resultado.
-  const ehDosagem = analise.calculadora.slug === "dosagem-caa";
+  // único de resultado — cada uma registra o seu em `laudo-corpo.tsx`.
+  const corpo = corpoDoLaudo(analise.calculadora.slug);
 
   const vencido =
     analise.validoAte !== null && analise.validoAte < hojeUtc();
@@ -189,24 +185,23 @@ export default async function LaudoPage({
       )}
 
       {/* Entradas — um laudo sem as premissas não é auditável */}
-      {ehDosagem ? (
-        <PremissasDosagem
-          e={analise.entradas as unknown as DosagemCaaInput}
-        />
+      {corpo ? (
+        <>
+          <corpo.Premissas entradas={analise.entradas} />
+          <corpo.Resultado resultados={analise.resultados} />
+        </>
       ) : (
-        <PremissasGranulometria
-          e={analise.entradas as unknown as GranulometriaInput}
-        />
-      )}
-
-      {ehDosagem ? (
-        <ResultadoDosagem
-          r={analise.resultados as unknown as DosagemCaaResultado}
-        />
-      ) : (
-        <ResultadoGranulometria
-          r={analise.resultados as unknown as GranulometriaResultado}
-        />
+        // Só acontece se uma calculadora sair do registro de laudos deixando
+        // análises gravadas para trás. Melhor dizer isso do que renderizar o
+        // corpo de outra calculadora com estes números.
+        <Card>
+          <CardContent className="pt-6 text-sm text-muted-foreground">
+            Esta análise foi feita com a calculadora{" "}
+            <span className="font-medium">{analise.calculadora.nome}</span>, que
+            não tem mais um formato de laudo registrado. Os dados continuam
+            gravados.
+          </CardContent>
+        </Card>
       )}
 
       {analise.parecer && (
@@ -239,48 +234,6 @@ export default async function LaudoPage({
         A conferência do resultado e a responsabilidade técnica são do
         engenheiro responsável.
       </p>
-    </div>
-  );
-}
-
-function PremissasDosagem({ e }: { e: DosagemCaaInput }) {
-  return (
-    <Card>
-      <CardContent className="grid gap-x-6 gap-y-2 pt-6 sm:grid-cols-2 lg:grid-cols-3">
-        <Premissa rotulo="Consumo de cimento" valor={`${e.cimento} kg/m³`} />
-        <Premissa rotulo="Fator a/c" valor={String(e.fatorAC)} />
-        <Premissa rotulo="Teor de argamassa" valor={`${e.teorArgamassa}%`} />
-        <Premissa rotulo="Teor de fíler" valor={`${e.teorFiler}%`} />
-        <Premissa rotulo="Teor de aditivo" valor={`${e.teorAditivo}%`} />
-        <Premissa
-          rotulo="Massa específica"
-          valor={`${e.massaEspecifica} kg/m³`}
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
-function PremissasGranulometria({ e }: { e: GranulometriaInput }) {
-  return (
-    <Card>
-      <CardContent className="grid gap-x-6 gap-y-2 pt-6 sm:grid-cols-2 lg:grid-cols-3">
-        <Premissa rotulo="Areia A" valor={e.nomeAreiaA} />
-        <Premissa rotulo="Areia B" valor={e.nomeAreiaB} />
-        <Premissa
-          rotulo="Teor de mistura"
-          valor={`${e.teorMistura}% / ${100 - e.teorMistura}%`}
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
-function Premissa({ rotulo, valor }: { rotulo: string; valor: string }) {
-  return (
-    <div className="flex items-baseline justify-between gap-2 border-b py-1 text-sm last:border-0">
-      <span className="text-muted-foreground">{rotulo}</span>
-      <span className="font-medium tabular-nums">{valor}</span>
     </div>
   );
 }
