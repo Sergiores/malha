@@ -1,6 +1,7 @@
 import { AlertTriangle, Ban, Check, Info, X } from "lucide-react";
 import type { ConsoloResultado, Verificacao } from "@/core/calculators/consolo-nbr9062/calc";
 import type { ConsoloInput } from "@/core/calculators/consolo-nbr9062/schema";
+import { AuditoriaConsolo } from "@/components/auditoria-consolo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function num(v: number, casas = 2) {
@@ -16,7 +17,7 @@ export function ResultadoConsolo({
 }: {
   r: ConsoloResultado;
   /** A geometria vem das entradas — o croqui desenha a peça informada. */
-  e?: Pick<ConsoloInput, "b" | "h" | "l" | "a" | "an" | "bn">;
+  e?: ConsoloInput;
 }) {
   const erros = r.avisos.filter((a) => a.severidade === "erro");
   const alertas = r.avisos.filter((a) => a.severidade === "alerta");
@@ -61,6 +62,11 @@ export function ResultadoConsolo({
           </CardContent>
         </Card>
       )}
+
+      {/* ⚠️ TEMPORÁRIO — auditoria para conferência contra a planilha.
+          Remover este bloco, o auditoria-consolo.tsx e o auditoria.ts
+          quando a validação com o cliente terminar. */}
+      {e && <AuditoriaConsolo e={e} r={r} />}
 
       {/* Fora de escopo para por aqui: sem verificações, sem armaduras. */}
       {!r.foraDeEscopo && (
