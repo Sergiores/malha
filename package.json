@@ -15,7 +15,7 @@
     "db:studio": "prisma studio",
     "db:sync-modulos": "tsx prisma/sync-modulos.ts",
     "db:liberar-base": "tsx prisma/liberar-modulos-base.ts",
-    "verificar:calculos": "tsx src/core/calculators/dosagem-caa/verificar.ts && tsx src/core/calculators/granulometria-areias/verificar.ts && tsx src/core/calculators/idade-concreto/verificar.ts"
+    "verificar:calculos": "tsx src/core/calculators/dosagem-caa/verificar.ts && tsx src/core/calculators/granulometria-areias/verificar.ts && tsx src/core/calculators/idade-concreto/verificar.ts && tsx src/core/calculators/consolo-nbr9062/verificar.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

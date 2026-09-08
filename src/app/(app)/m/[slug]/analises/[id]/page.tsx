@@ -188,7 +188,10 @@ export default async function LaudoPage({
       {corpo ? (
         <>
           <corpo.Premissas entradas={analise.entradas} />
-          <corpo.Resultado resultados={analise.resultados} />
+          <corpo.Resultado
+            entradas={analise.entradas}
+            resultados={analise.resultados}
+          />
         </>
       ) : (
         // Só acontece se uma calculadora sair do registro de laudos deixando

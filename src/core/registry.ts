@@ -50,7 +50,14 @@ export const MODULOS: ModuloDef[] = [
     nome: "Estrutura de Concreto",
     descricao:
       "Dimensionamento e verificação de elementos estruturais de concreto armado.",
-    calculadoras: [],
+    calculadoras: [
+      {
+        slug: "consolo-nbr9062",
+        nome: "Consolo",
+        descricao:
+          "Consolo curto e muito curto com carga direta pela NBR 9062: classificação, verificações e armaduras.",
+      },
+    ],
   },
   {
     slug: "estrutura-metalica",

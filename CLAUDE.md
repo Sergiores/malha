@@ -444,6 +444,40 @@ mudarem, o motor divergiu da planilha que o engenheiro já valida na prática
 - O ponto destacado no gráfico some quando a idade passa de 28 dias. É
   correto: a curva termina ali e inventar um ponto fora dela mentiria.
 
+### Consolo NBR 9062 — decisões
+
+Onze questões foram levantadas na análise da planilha de origem e respondidas
+pelo cliente. O registro completo, com o porquê de cada uma, está em
+**`docs/consolo-decisoes.md`** — leia antes de mexer no motor. O resumo:
+
+- **Reimplementado a partir da norma**, não transcrito da planilha (A-11). A
+  planilha serve só como conferência no `verificar.ts`.
+- **Três regimes por `a/d`**: ≤ 0,5 muito curto (atrito-cisalhamento),
+  ≤ 1,0 curto (biela e tirante), > 1,0 **fora de escopo** — a ferramenta
+  avisa que é viga em balanço e não produz laudo (A-01). A mensagem diz o
+  balanço máximo que voltaria ao domínio de consolo.
+- **Toda verificação declara ATENDE / NÃO ATENDE** com aproveitamento e folga
+  (A-02), e a análise ganha um veredito consolidado governado pela mais
+  crítica — é ele que aparece na lista.
+- 🚨 **`d′ = c + ø/2`** (A-05). O 0,5 cm fixo da planilha *era* metade da
+  bitola de 10 mm que ela usava. Generalizar preserva o caso de referência e
+  faz a bitola atravessar a geometria, como deveria.
+- 🚨 **A tensão no aparelho de apoio usa Fk característico** contra 7,00 MPa,
+  enquanto as outras duas verificações usam Fsd (A-03). É deliberado —
+  admissível de serviço — e confirmado pelo cliente. **Não padronize para
+  Fsd.**
+- 🚨 **`bₙ ≤ b` é bloqueio** (A-06), e por isso **o `PADRAO` do schema não
+  passa no próprio Zod**: o caso da planilha tem `bₙ = 18` com `b = 15`. O
+  `verificar.ts` chama o motor direto, que é função pura e não valida. Isso
+  não é contorno — é a separação entre o que a matemática aceita e o que o
+  produto deixa digitar.
+- **`Hsd = fator × Fsd`** (A-07). A planilha rotulava "Hk = Vk × 0,80" e
+  aplicava sobre Fsd; dá o mesmo número, mas aqui o rótulo segue a conta.
+- **Sem detalhamento em barras** (A-09) e **sem verificação de ancoragem**
+  (A-10, fase 2). O resultado para nas áreas em cm².
+- A bitola `ø` continua no formulário mesmo sem detalhamento: ela entra no
+  segmento `AB` e no `d′`.
+
 ### Apresentação das calculadoras — dois registros
 
 Quando a terceira calculadora chegou, dois `if` binários deixaram de fechar.

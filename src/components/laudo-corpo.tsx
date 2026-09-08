@@ -6,9 +6,18 @@ import type { GranulometriaResultado } from "@/core/calculators/granulometria-ar
 import type { IdadeConcretoInput } from "@/core/calculators/idade-concreto/schema";
 import type { IdadeConcretoResultado } from "@/core/calculators/idade-concreto/calc";
 import { CIMENTOS } from "@/core/calculators/idade-concreto/schema";
+import type { ConsoloInput } from "@/core/calculators/consolo-nbr9062/schema";
+import type { ConsoloResultado } from "@/core/calculators/consolo-nbr9062/calc";
+import {
+  ANCORAGENS,
+  APOIOS,
+  CLASSES_ACO,
+  CONCRETAGENS,
+} from "@/core/calculators/consolo-nbr9062/schema";
 import { ResultadoDosagem } from "@/components/resultado-dosagem";
 import { ResultadoGranulometria } from "@/components/resultado-granulometria";
 import { ResultadoIdade } from "@/components/resultado-idade";
+import { ResultadoConsolo } from "@/components/resultado-consolo";
 import { Card, CardContent } from "@/components/ui/card";
 
 /**
@@ -27,8 +36,14 @@ import { Card, CardContent } from "@/components/ui/card";
 export type CorpoLaudo = {
   /** As premissas — sem elas o laudo não é auditável. */
   Premissas: (p: { entradas: unknown }) => ReactNode;
-  /** O resultado, exatamente como foi gravado. */
-  Resultado: (p: { resultados: unknown }) => ReactNode;
+  /**
+   * O resultado, exatamente como foi gravado.
+   *
+   * Recebe também as entradas porque alguns resultados são desenhados a
+   * partir delas — o croqui do consolo e o dia destacado na curva da idade
+   * saem da geometria e da idade informadas, não do que foi calculado.
+   */
+  Resultado: (p: { entradas: unknown; resultados: unknown }) => ReactNode;
 };
 
 const CORPOS: Record<string, CorpoLaudo> = {
@@ -39,6 +54,7 @@ const CORPOS: Record<string, CorpoLaudo> = {
     Resultado: ({ resultados }) => (
       <ResultadoDosagem r={resultados as DosagemCaaResultado} />
     ),
+
   },
 
   "granulometria-areias": {
@@ -54,8 +70,23 @@ const CORPOS: Record<string, CorpoLaudo> = {
     Premissas: ({ entradas }) => (
       <PremissasIdade e={entradas as IdadeConcretoInput} />
     ),
-    Resultado: ({ resultados }) => (
-      <ResultadoIdade r={resultados as IdadeConcretoResultado} />
+    Resultado: ({ entradas, resultados }) => (
+      <ResultadoIdade
+        r={resultados as IdadeConcretoResultado}
+        idade={(entradas as IdadeConcretoInput).idade}
+      />
+    ),
+  },
+
+  "consolo-nbr9062": {
+    Premissas: ({ entradas }) => (
+      <PremissasConsolo e={entradas as ConsoloInput} />
+    ),
+    Resultado: ({ entradas, resultados }) => (
+      <ResultadoConsolo
+        r={resultados as ConsoloResultado}
+        e={entradas as ConsoloInput}
+      />
     ),
   },
 };
@@ -111,6 +142,33 @@ function PremissasIdade({ e }: { e: IdadeConcretoInput }) {
         rotulo="Carga de projeto"
         valor={e.carga > 0 ? `${e.carga} ${e.unidadeCarga}` : "não informada"}
       />
+    </GradePremissas>
+  );
+}
+
+function PremissasConsolo({ e }: { e: ConsoloInput }) {
+  const aco = CLASSES_ACO.find((a) => a.chave === e.aco);
+  const apoio = APOIOS.find((a) => a.chave === e.apoio);
+  const fase = CONCRETAGENS.find((c) => c.chave === e.concretagem);
+  const anc = ANCORAGENS.find((a) => a.chave === e.ancoragem);
+  return (
+    <GradePremissas>
+      <Premissa rotulo="Concreto" valor={`C${e.fck} — fck ${e.fck} MPa`} />
+      <Premissa
+        rotulo="Aço"
+        valor={aco ? `${aco.nome} — fyk ${aco.fyk} MPa` : e.aco}
+      />
+      <Premissa rotulo="Concretagem" valor={fase?.nome ?? e.concretagem} />
+      <Premissa rotulo="Largura b" valor={`${e.b} cm`} />
+      <Premissa rotulo="Altura h" valor={`${e.h} cm`} />
+      <Premissa rotulo="Avanço l" valor={`${e.l} cm`} />
+      <Premissa rotulo="Balanço a" valor={`${e.a} cm`} />
+      <Premissa rotulo="Cobrimento c" valor={`${e.c} cm`} />
+      <Premissa rotulo="Bitola do tirante" valor={`ø ${e.bitola} mm`} />
+      <Premissa rotulo="Aparelho de apoio" valor={apoio?.nome ?? e.apoio} />
+      <Premissa rotulo="Apoio aₙ × bₙ" valor={`${e.an} × ${e.bn} cm`} />
+      <Premissa rotulo="Ancoragem" valor={anc?.nome ?? e.ancoragem} />
+      <Premissa rotulo="Força vertical Fk" valor={`${e.fk} kN`} />
     </GradePremissas>
   );
 }

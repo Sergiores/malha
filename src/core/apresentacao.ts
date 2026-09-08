@@ -55,6 +55,20 @@ const LEITORES: Record<string, Leitor> = {
     typeof r.fckEfetivo === "number"
       ? { rotulo: "fck efetivo", valor: `${num(r.fckEfetivo)} MPa` }
       : null,
+
+  // O consolo não tem um número que resuma; o que importa é se passou.
+  // A armadura de tirante entra como rótulo porque é o que se especifica.
+  "consolo-nbr9062": (r) => {
+    if (r.veredito !== "ATENDE" && r.veredito !== "NAO_ATENDE") return null;
+    const arm = r.armaduras as { asTir?: number } | null;
+    return {
+      rotulo:
+        arm && typeof arm.asTir === "number"
+          ? `As,tir ${num(arm.asTir, 3)} cm²`
+          : "consolo",
+      valor: r.veredito === "ATENDE" ? "ATENDE" : "NÃO ATENDE",
+    };
+  },
 };
 
 export function destaqueDaAnalise(
