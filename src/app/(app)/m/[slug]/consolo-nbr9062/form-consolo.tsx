@@ -64,9 +64,17 @@ export function FormConsolo({
     null
   );
 
-  // Ordem de precedência: o que acabou de ser calculado > o que veio da
-  // análise carregada > formulário em branco.
-  const v = (estado?.ok ? estado.entradas : (iniciais ?? VAZIO)) as Valores;
+  // Ordem de precedência: o que acabou de ser calculado > o que foi digitado
+  // e recusado na validação > o que veio da análise carregada > em branco.
+  //
+  // O segundo caso é o que impede o formulário de se esvaziar quando uma
+  // medida é recusada: o React 19 reseta o form ao fim da action, e sem os
+  // valores de volta o `defaultValue` seria o formulário vazio.
+  const v = (
+    estado?.ok
+      ? estado.entradas
+      : (estado?.valores ?? iniciais ?? VAZIO)
+  ) as Valores;
 
   const txt = (k: string) => (v[k] === undefined || v[k] === null ? "" : String(v[k]));
 
@@ -82,8 +90,10 @@ export function FormConsolo({
     (estado && !estado.ok && estado.error) ||
     (estadoSalvar && !estadoSalvar.ok && estadoSalvar.error);
 
-  const clienteSelecionado = estado?.ok
-    ? estado.idCliente
+  // Também no erro: o cliente escolhido não pode se perder junto com a
+  // validação recusada.
+  const clienteSelecionado = estado
+    ? (estado.idCliente ?? null)
     : (idClienteInicial ?? null);
 
   // A-01: peça fora do domínio de consolo não vira laudo.

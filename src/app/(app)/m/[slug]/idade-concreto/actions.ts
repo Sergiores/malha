@@ -26,7 +26,17 @@ export type EstadoIdade =
       /** Devolvido para o select não se perder ao recalcular. */
       idCliente: number | null;
     }
-  | { ok: false; error: string }
+  /**
+   * O erro carrega de volta o que foi digitado — sem isso o formulário se
+   * esvazia a cada validação recusada, por causa do `form.reset()` que o
+   * React 19 dá quando a action termina.
+   */
+  | {
+      ok: false;
+      error: string;
+      valores?: Record<string, unknown>;
+      idCliente?: number | null;
+    }
   | null;
 
 function lerFormulario(formData: FormData) {
@@ -50,11 +60,19 @@ export async function calcularIdade(
   await requireModulo(MODULO);
   const { organizacao } = await contaComOrganizacao();
 
-  const parsed = idadeConcretoSchema.safeParse(lerFormulario(formData));
+  const bruto = lerFormulario(formData);
+  const idCliente = await idClienteValido(
+    formData.get("idCliente"),
+    organizacao.id
+  );
+
+  const parsed = idadeConcretoSchema.safeParse(bruto);
   if (!parsed.success) {
     return {
       ok: false,
       error: parsed.error.issues[0]?.message ?? "Dados inválidos.",
+      valores: bruto,
+      idCliente,
     };
   }
 
@@ -62,7 +80,7 @@ export async function calcularIdade(
     ok: true,
     entradas: parsed.data,
     resultado: calcularIdadeConcreto(parsed.data),
-    idCliente: await idClienteValido(formData.get("idCliente"), organizacao.id),
+    idCliente,
   };
 }
 

@@ -28,7 +28,18 @@ export type EstadoCalculo =
       /** Devolvido para o select não se perder ao recalcular. */
       idCliente: number | null;
     }
-  | { ok: false; error: string }
+  /**
+   * O erro carrega de volta o que foi digitado — sem isso o formulário se
+   * esvazia a cada validação recusada. O React 19 dá `form.reset()` quando a
+   * action termina, e os campos voltam ao `defaultValue`, que sem entradas no
+   * estado é o formulário em branco.
+   */
+  | {
+      ok: false;
+      error: string;
+      valores?: Record<string, unknown>;
+      idCliente?: number | null;
+    }
   | null;
 
 function lerFormulario(formData: FormData) {
@@ -60,19 +71,27 @@ export async function calcular(
   await requireModulo(MODULO);
   const { organizacao } = await contaComOrganizacao();
 
-  const parsed = dosagemCaaSchema.safeParse(lerFormulario(formData));
+  const bruto = lerFormulario(formData);
+  const idCliente = await idClienteValido(
+    formData.get("idCliente"),
+    organizacao.id
+  );
+
+  const parsed = dosagemCaaSchema.safeParse(bruto);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Dados inválidos.",
+      valores: bruto,
+      idCliente,
+    };
   }
 
   return {
     ok: true,
     entradas: parsed.data,
     resultado: calcularDosagemCaa(parsed.data),
-    idCliente: await idClienteValido(
-      formData.get("idCliente"),
-      organizacao.id
-    ),
+    idCliente,
   };
 }
 

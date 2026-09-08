@@ -54,9 +54,12 @@ export function FormIdade({
     null
   );
 
-  // Ordem de precedência: o que acabou de ser calculado > o que veio da
-  // análise carregada > formulário em branco.
-  const v = (estado?.ok ? estado.entradas : (iniciais ?? VAZIO)) as {
+  // Ordem: o que acabou de ser calculado > o que foi digitado e recusado na
+  // validação > o que veio da análise carregada > em branco. O segundo caso
+  // impede o formulário de se esvaziar quando um valor é recusado.
+  const v = (
+    estado?.ok ? estado.entradas : (estado?.valores ?? iniciais ?? VAZIO)
+  ) as {
     fck28?: number | string;
     idade?: number | string;
     cimento?: string;
@@ -78,8 +81,9 @@ export function FormIdade({
     (estado && !estado.ok && estado.error) ||
     (estadoSalvar && !estadoSalvar.ok && estadoSalvar.error);
 
-  const clienteSelecionado = estado?.ok
-    ? estado.idCliente
+  // Também no erro: o cliente não pode se perder junto com a validação.
+  const clienteSelecionado = estado
+    ? (estado.idCliente ?? null)
     : (idClienteInicial ?? null);
 
   const sAtual = CIMENTOS.find((c) => c.chave === cimento)?.s;

@@ -494,12 +494,32 @@ Ambos viraram registro por slug:
   declarar deixa a célula vazia. Sem JSX de propósito: roda em Server
   Components de listagem.
 
-### `<select>` dentro de form com server action
+### 🚨 O `form.reset()` do React 19 — três manifestações do mesmo defeito
 
-⚠️ Use **`src/components/select-campo.tsx`**, nunca um `<select>` cru. Ele
-concentra as duas armadilhas já pagas: o `form.reset()` do React 19 que zera a
-escolha (ver a seção de Clientes) e o `bg-background` que a lista aberta exige
-no tema escuro. O `seletor-cliente.tsx` também passou a usá-lo.
+O React 19 chama `form.reset()` quando a action termina. Isso já causou três
+bugs distintos neste projeto, todos com o mesmo sintoma: **um campo que a tela
+mostra preenchido e o DOM já esvaziou**, descoberto só depois de olhar o
+banco. Ao criar formulário novo, confira os três:
+
+1. **`<select>` volta para a primeira opção.** Ele não ganha `selected` em
+   nenhuma `<option>`, e como o estado do React não mudou, ele não reaplica.
+   Tornar o campo controlado **não resolve**. Use sempre
+   **`src/components/select-campo.tsx`**, que reafirma o valor no DOM a cada
+   commit — e que também traz o `bg-background` que a lista aberta exige no
+   tema escuro.
+2. **Campos não controlados voltam ao `defaultValue`.** Se o estado de erro da
+   action não devolve o que foi digitado, esse `defaultValue` é o formulário
+   em branco — e **uma medida recusada apagava as outras treze**. Por isso
+   todo estado de erro das calculadoras carrega `valores` (o retorno cru de
+   `lerFormulario`) e `idCliente`, e os forms leem
+   `estado?.ok ? estado.entradas : (estado?.valores ?? iniciais ?? VAZIO)`.
+3. **`<input>` e `<textarea>` controlados sobrevivem** — o React mantém o
+   atributo em dia. Foi por isso que o parecer técnico nunca deu problema, e
+   é o que faz o defeito parecer aleatório se não se conhece a regra.
+
+Comprovado em formulário de teste isolado nas três vezes, com teste negativo
+(remover a correção e ver o campo esvaziar). Não confie em inspeção visual
+aqui: a tela mente.
 
 ### Módulo Geral e Clientes — decisões
 

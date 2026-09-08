@@ -26,7 +26,22 @@ export type EstadoConsolo =
       /** Devolvido para o select não se perder ao recalcular. */
       idCliente: number | null;
     }
-  | { ok: false; error: string }
+  /**
+   * O erro carrega de volta o que foi digitado.
+   *
+   * Sem isso o formulário se esvazia a cada validação recusada: o React 19
+   * dá `form.reset()` quando a action termina, e os campos voltam ao
+   * `defaultValue` — que, sem `entradas` no estado, é o formulário em branco.
+   * Errar uma medida apagava as outras treze.
+   */
+  | {
+      ok: false;
+      error: string;
+      /** Ausente quando o erro vem do salvar: ali o estado do cálculo, que
+          já tem as entradas válidas, é quem repovoa a tela. */
+      valores?: Record<string, unknown>;
+      idCliente?: number | null;
+    }
   | null;
 
 function lerFormulario(formData: FormData) {
@@ -60,11 +75,19 @@ export async function calcularConsoloAction(
   await requireModulo(MODULO);
   const { organizacao } = await contaComOrganizacao();
 
-  const parsed = consoloSchema.safeParse(lerFormulario(formData));
+  const bruto = lerFormulario(formData);
+  const idCliente = await idClienteValido(
+    formData.get("idCliente"),
+    organizacao.id
+  );
+
+  const parsed = consoloSchema.safeParse(bruto);
   if (!parsed.success) {
     return {
       ok: false,
       error: parsed.error.issues[0]?.message ?? "Dados inválidos.",
+      valores: bruto,
+      idCliente,
     };
   }
 
@@ -72,7 +95,7 @@ export async function calcularConsoloAction(
     ok: true,
     entradas: parsed.data,
     resultado: calcularConsolo(parsed.data),
-    idCliente: await idClienteValido(formData.get("idCliente"), organizacao.id),
+    idCliente,
   };
 }
 

@@ -29,7 +29,17 @@ export type EstadoGranulometria =
       /** Devolvido para o select não se perder ao recalcular. */
       idCliente: number | null;
     }
-  | { ok: false; error: string }
+  /**
+   * O erro carrega de volta o que foi digitado — sem isso as quarenta massas
+   * de peneira somem a cada validação recusada. O React 19 dá `form.reset()`
+   * quando a action termina, e os campos voltam ao `defaultValue`.
+   */
+  | {
+      ok: false;
+      error: string;
+      valores?: Record<string, unknown>;
+      idCliente?: number | null;
+    }
   | null;
 
 /** Lê as 10 massas de uma série do formulário. */
@@ -62,11 +72,19 @@ export async function calcularGranul(
   await requireModulo(MODULO);
   const { organizacao } = await contaComOrganizacao();
 
-  const parsed = granulometriaSchema.safeParse(lerFormulario(formData));
+  const bruto = lerFormulario(formData);
+  const idCliente = await idClienteValido(
+    formData.get("idCliente"),
+    organizacao.id
+  );
+
+  const parsed = granulometriaSchema.safeParse(bruto);
   if (!parsed.success) {
     return {
       ok: false,
       error: parsed.error.issues[0]?.message ?? "Dados inválidos.",
+      valores: bruto,
+      idCliente,
     };
   }
 
@@ -76,10 +94,7 @@ export async function calcularGranul(
     entradas: parsed.data,
     resultado: calcularGranulometria(parsed.data),
     sugestao: { teor: melhor.teor, otimas: melhor.otimas },
-    idCliente: await idClienteValido(
-      formData.get("idCliente"),
-      organizacao.id
-    ),
+    idCliente,
   };
 }
 

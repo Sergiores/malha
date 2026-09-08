@@ -69,9 +69,12 @@ export function FormGranulometria({
     (estado && !estado.ok && estado.error) ||
     (estadoSalvar && !estadoSalvar.ok && estadoSalvar.error);
 
-  // Ordem de precedência: o que acabou de ser calculado > o que veio da
-  // análise carregada > formulário em branco.
-  const v = (estado?.ok ? estado.entradas : (iniciais ?? VAZIO)) as {
+  // Ordem: o que acabou de ser calculado > o que foi digitado e recusado na
+  // validação > o que veio da análise carregada > em branco. O segundo caso
+  // impede que as quarenta massas de peneira sumam num erro de validação.
+  const v = (
+    estado?.ok ? estado.entradas : (estado?.valores ?? iniciais ?? VAZIO)
+  ) as {
     nomeAreiaA: string;
     nomeAreiaB: string;
     areiaA1: Array<number | string>;
@@ -82,8 +85,9 @@ export function FormGranulometria({
     observacao?: string;
   };
 
-  const clienteSelecionado = estado?.ok
-    ? estado.idCliente
+  // Também no erro: o cliente não pode se perder junto com a validação.
+  const clienteSelecionado = estado
+    ? (estado.idCliente ?? null)
     : (idClienteInicial ?? null);
 
   return (

@@ -81,14 +81,17 @@ export function FormDosagem({
     (estado && !estado.ok && estado.error) ||
     (estadoSalvar && !estadoSalvar.ok && estadoSalvar.error);
 
-  // Ordem de precedência: o que o usuário acabou de calcular > o que veio da
-  // análise carregada > formulário em branco.
-  const v: Partial<Record<keyof DosagemCaaInput, string | number>> =
-    estado?.ok ? estado.entradas : (iniciais ?? VAZIO);
+  // Ordem: o que acabou de ser calculado > o que foi digitado e recusado na
+  // validação > o que veio da análise carregada > em branco. O segundo caso
+  // impede o formulário de se esvaziar quando um valor é recusado.
+  const v = (
+    estado?.ok ? estado.entradas : (estado?.valores ?? iniciais ?? VAZIO)
+  ) as Partial<Record<keyof DosagemCaaInput, string | number>>;
 
   // Numa cópia, o cliente também vem preenchido — mas continua trocável.
-  const clienteSelecionado = estado?.ok
-    ? estado.idCliente
+  // Também no erro, para não se perder junto com a validação recusada.
+  const clienteSelecionado = estado
+    ? (estado.idCliente ?? null)
     : (idClienteInicial ?? null);
 
   return (
