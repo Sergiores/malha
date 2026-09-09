@@ -122,7 +122,16 @@ export type ConsoloResultado = {
 const grau = (rad: number) => (rad * 180) / Math.PI;
 const rad = (g: number) => (g * Math.PI) / 180;
 
+/**
+ * Arredonda e **garante número finito**.
+ *
+ * `Infinity` e `NaN` não existem em JSON: o Prisma os grava como `null`, e o
+ * laudo quebra ao formatar. Deixar passar aqui é gravar uma análise que não
+ * abre. Se algum caminho de cálculo chegar a não-finito, é bug de domínio —
+ * e o lugar de tratá-lo é antes, com um retorno de geometria impossível.
+ */
 function arred(v: number, casas = 4): number {
+  if (!Number.isFinite(v)) return 0;
   const f = 10 ** casas;
   return Math.round(v * f) / f;
 }
@@ -317,12 +326,31 @@ export function calcularConsolo(e: ConsoloInput): ConsoloResultado {
       e.ancoragem === "BARRA_SOLDADA" ? e.bitola / 10 + 2 : e.bitola / 10;
     const ab = e.l - (e.c + folgaAncoragem) - e.a - bd;
 
-    if (ab < 0) {
-      avisos.push({
-        campo: "l",
-        severidade: "erro",
-        mensagem: `Não há comprimento para a biela se formar: o avanço l = ${br(e.l)} cm não cobre o cobrimento, a ancoragem, o balanço a e a projeção do tirante. Aumente l em pelo menos ${br(-ab)} cm.`,
-      });
+    /*
+     * Sem comprimento, a biela não se forma — e daí para a frente tudo é
+     * lixo: AC negativo, área de biela negativa, tensão = Fsd/negativo.
+     *
+     * Isto já gravou uma análise inutilizável: a tensão saía `Infinity`, que
+     * o JSON não representa, virava `null` no banco e derrubava o laudo com
+     * exceção no cliente. Um aviso não bastava — a peça precisa parar aqui,
+     * como já para quando vira viga em balanço.
+     */
+    if (ab <= 0) {
+      const lMin = e.c + folgaAncoragem + e.a + bd;
+      return {
+        ...base,
+        classificacao,
+        nomeClassificacao: "Geometria impossível",
+        razaoAD: arred(razaoAD, 4),
+        foraDeEscopo: true,
+        mensagemEscopo: `Não há comprimento para a biela se formar. O avanço l = ${br(e.l)} cm precisa cobrir o cobrimento (${br(e.c)}), a ancoragem (${br(folgaAncoragem)}), o balanço a (${br(e.a)}) e a projeção do tirante (${br(bd)}) — soma de ${br(lMin)} cm. Aumente l para mais de ${br(lMin)} cm, ou reduza o balanço a ou o cobrimento.`,
+        geometria: null,
+        cisalhamento: null,
+        armaduras: null,
+        verificacoes: [],
+        veredito: "FORA_ESCOPO",
+        avisos,
+      };
     }
 
     const ad = ab + bd;

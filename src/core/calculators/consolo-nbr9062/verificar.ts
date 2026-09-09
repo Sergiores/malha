@@ -111,6 +111,49 @@ if (!viga.foraDeEscopo || viga.armaduras !== null) {
   falhas.push("a/d > 1 deveria sair fora de escopo e sem armaduras");
 }
 
+console.log("\n=== Geometria impossível: biela sem comprimento ===");
+// Caso real que derrubou o laudo em producao: l pequeno demais para o
+// cobrimento + ancoragem + balanco + projecao do tirante. AB ficava negativo,
+// a area da biela tambem, e a tensao saia Infinity — que o JSON grava como
+// null e o laudo nao consegue formatar.
+const impossivel = calcularConsolo({
+  ...PADRAO,
+  b: 10, h: 10, l: 10, a: 4.5, c: 5, an: 5, bn: 5, fck: 25, fk: 10,
+});
+console.log(`classificação: ${impossivel.nomeClassificacao}`);
+console.log(`fora de escopo: ${impossivel.foraDeEscopo}`);
+console.log(`sem verificações: ${impossivel.verificacoes.length === 0}`);
+console.log(`mensagem: ${impossivel.mensagemEscopo}`);
+if (!impossivel.foraDeEscopo || impossivel.verificacoes.length > 0) {
+  falhas.push("AB <= 0 deveria sair fora de escopo, sem verificações");
+}
+
+// Nada do que sai do motor pode ser não-finito: JSON.stringify transforma
+// Infinity e NaN em null, e o laudo quebra ao formatar.
+function todosFinitos(v: unknown, caminho = "raiz"): string[] {
+  if (typeof v === "number") {
+    return Number.isFinite(v) ? [] : [`${caminho} = ${v}`];
+  }
+  if (Array.isArray(v)) {
+    return v.flatMap((x, i) => todosFinitos(x, `${caminho}[${i}]`));
+  }
+  if (v && typeof v === "object") {
+    return Object.entries(v).flatMap(([k, x]) => todosFinitos(x, `${caminho}.${k}`));
+  }
+  return [];
+}
+for (const [rotulo, res] of [
+  ["caso de referência", r],
+  ["muito curto", mc],
+  ["viga em balanço", viga],
+  ["geometria impossível", impossivel],
+  ["bitola 25", grosso],
+] as const) {
+  const ruins = todosFinitos(res);
+  console.log(`  ${ruins.length === 0 ? "OK  " : "FALHA"} ${rotulo}: ${ruins.length === 0 ? "todos os números finitos" : ruins.join(", ")}`);
+  if (ruins.length > 0) falhas.push(`nao-finito em ${rotulo}: ${ruins.join(", ")}`);
+}
+
 console.log("\n=== A-02: reprovação é detectada ===");
 // Carga alta o bastante para estourar a compressão na biela.
 const pesado = calcularConsolo({ ...PADRAO, fk: 900 });

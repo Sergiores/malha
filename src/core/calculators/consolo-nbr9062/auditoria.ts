@@ -44,14 +44,21 @@ export type BlocoAuditoria = {
   passos: PassoAuditoria[];
 };
 
-function n(v: number, casas = 4): string {
+/**
+ * Tolerante a `null`: o snapshot é JSON, e um valor não-finito gravado antes
+ * da correção chega aqui como `null`. Formatar isso sem guarda derrubava a
+ * página com exceção no cliente.
+ */
+function n(v: number | null | undefined, casas = 4): string {
+  if (v == null || !Number.isFinite(v)) return "—";
   return v.toLocaleString("pt-BR", {
     minimumFractionDigits: casas,
     maximumFractionDigits: casas,
   });
 }
 /** Versão curta, para não poluir a substituição. */
-function c(v: number, casas = 2): string {
+function c(v: number | null | undefined, casas = 2): string {
+  if (v == null || !Number.isFinite(v)) return "—";
   return v.toLocaleString("pt-BR", {
     minimumFractionDigits: casas,
     maximumFractionDigits: casas,
@@ -420,12 +427,14 @@ export function auditoriaConsolo(
   /* ---------------- Verificações ---------------- */
   const passosVerif: PassoAuditoria[] = r.verificacoes.map((v) => {
     if (v.chave === "biela") {
-      const g = r.geometria!;
+      // Optional chaining: snapshot antigo pode ter verificação de biela sem
+      // geometria, e uma exceção aqui derruba o laudo inteiro.
+      const g = r.geometria;
       return {
         simbolo: "σ_bie",
         descricao: `Compressão na biela · ${v.atende ? "ATENDE" : "NÃO ATENDE"}`,
         formula: "Rcd / A_bie ≤ fcd",
-        substituicao: `${c(g.rcd, 3)} ÷ ${c(g.abie, 3)} × 10 = ${c(v.atuante, 3)} ≤ ${c(v.limite, 3)}`,
+        substituicao: `${c(g?.rcd, 3)} ÷ ${c(g?.abie, 3)} × 10 = ${c(v.atuante, 3)} ≤ ${c(v.limite, 3)}`,
         valor: n(v.atuante, 3),
         unidade: "MPa",
         celula: "Consolo Curto!F17 vs F19",

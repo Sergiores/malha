@@ -494,6 +494,29 @@ Ambos viraram registro por slug:
   declarar deixa a célula vazia. Sem JSX de propósito: roda em Server
   Components de listagem.
 
+### 🚨 `Infinity` e `NaN` não existem em JSON
+
+Derrubou o laudo em produção. Uma geometria degenerada de consolo (avanço `l`
+curto demais) produzia área de biela negativa e tensão `Infinity`. O
+`JSON.stringify` do Prisma grava isso como **`null`**, e no laudo o
+`null.toLocaleString()` estourava com *"a client-side exception has
+occurred"* — página inteira em branco, sem pista do que era.
+
+Três defesas, e as três são necessárias:
+
+1. **Barrar no domínio.** Geometria que não fecha para antes de calcular, como
+   já parava o caso de viga em balanço: `foraDeEscopo` com mensagem dizendo o
+   valor mínimo que resolveria. Aviso não bastava — ele deixava salvar.
+2. **`arred()` devolve número finito**, sempre. É a última linha antes do
+   banco.
+3. **Formatadores toleram `null`** e mostram "—". Não é preciosismo: as
+   análises gravadas antes da correção continuam no banco, e um laudo antigo
+   tem de abrir.
+
+O `verificar.ts` do consolo varre **todos os números de todos os cenários**
+procurando não-finitos. Vale copiar esse teste para qualquer calculadora com
+divisão cujo denominador dependa da geometria.
+
 ### 🚨 O `form.reset()` do React 19 — três manifestações do mesmo defeito
 
 O React 19 chama `form.reset()` quando a action termina. Isso já causou três

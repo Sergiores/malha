@@ -4,7 +4,16 @@ import type { ConsoloInput } from "@/core/calculators/consolo-nbr9062/schema";
 import { AuditoriaConsolo } from "@/components/auditoria-consolo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function num(v: number, casas = 2) {
+/**
+ * Formata tolerando o que o snapshot pode trazer.
+ *
+ * `Analise.resultados` é JSON: um `Infinity` gravado por engano vira `null`
+ * no banco, e `null.toLocaleString()` derruba a página inteira com exceção
+ * no cliente. Já aconteceu. O motor não produz mais esses valores, mas as
+ * análises gravadas antes continuam lá — e um laudo antigo tem de abrir.
+ */
+function num(v: number | null | undefined, casas = 2) {
+  if (v == null || !Number.isFinite(v)) return "—";
   return v.toLocaleString("pt-BR", {
     minimumFractionDigits: casas,
     maximumFractionDigits: casas,
@@ -184,7 +193,9 @@ function VereditoGlobal({ r }: { r: ConsoloResultado }) {
 
 function LinhaVerificacao({ v }: { v: Verificacao }) {
   // A barra satura em 100%: o que passa do limite já está dito no número.
-  const preenchido = Math.min(Math.max(v.aproveitamento, 0), 1) * 100;
+  // O `?? 0` cobre snapshot antigo com aproveitamento nulo.
+  const aprov = Number.isFinite(v.aproveitamento) ? v.aproveitamento : 0;
+  const preenchido = Math.min(Math.max(aprov, 0), 1) * 100;
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -211,11 +222,16 @@ function LinhaVerificacao({ v }: { v: Verificacao }) {
 
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-xs text-muted-foreground">
         <span className="tabular-nums">
-          {num(v.atuante)} de {num(v.limite)} {v.unidade} ·{" "}
-          {num(v.aproveitamento * 100, 1)}% do limite ·{" "}
-          {v.folga >= 0
-            ? `folga de ${num(v.folga * 100, 1)}%`
-            : `excede em ${num(-v.folga * 100, 1)}%`}
+          {num(v.atuante)} de {num(v.limite)} {v.unidade}
+          {Number.isFinite(v.aproveitamento) && (
+            <>
+              {" · "}
+              {num(v.aproveitamento * 100, 1)}% do limite ·{" "}
+              {v.folga >= 0
+                ? `folga de ${num(v.folga * 100, 1)}%`
+                : `excede em ${num(-v.folga * 100, 1)}%`}
+            </>
+          )}
         </span>
         <span>{v.criterio}</span>
       </div>
