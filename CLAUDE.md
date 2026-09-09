@@ -569,6 +569,18 @@ aqui: a tela mente.
 
 ### Ciclo de vida da análise — decisões
 
+- **Grava só no "Salvar análise".** `Calcular` roda no servidor, devolve o
+  resultado e não toca o banco — dá para iterar sem deixar rastro. O botão
+  Salvar só aparece depois de um cálculo bem-sucedido.
+- **O botão Salvar some quando um campo de cálculo muda** (`useFormSujo` em
+  `src/components/form-sujo.ts`), e volta depois de novo Calcular. Sem isso a
+  action de salvar leria o formulário no instante do clique e recalcularia a
+  partir dele: o laudo sairia correto e coerente, mas com números que o
+  engenheiro nunca viu — ele assinaria uma coisa tendo conferido outra.
+  Campos que não entram no cálculo (cliente, título, observação, parecer,
+  validade) não invalidam, senão trocar o cliente obrigaria a recalcular.
+  Quando o botão some, o `AvisoRecalcular` ocupa o lugar dele: esconder
+  controle sem dizer por quê é pior que o problema que isso resolve.
 - **Só `RASCUNHO` aceita alteração.** A regra mora em `gravarAnalise()`
   (`src/lib/analise-comum.ts`), no servidor, e não no botão: o `editarId`
   vem do HTML e não é confiável. Concluída ou aprovada, a análise vira

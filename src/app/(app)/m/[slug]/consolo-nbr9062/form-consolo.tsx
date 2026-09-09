@@ -27,6 +27,8 @@ import {
   type ModoFormulario,
 } from "@/components/campos-laudo";
 import { SelectCampo } from "@/components/select-campo";
+import { useFormSujo } from "@/components/form-sujo";
+import { AvisoRecalcular } from "@/components/aviso-recalcular";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
@@ -96,12 +98,21 @@ export function FormConsolo({
     ? (estado.idCliente ?? null)
     : (idClienteInicial ?? null);
 
+  const { sujo, aoMudar } = useFormSujo(estado);
+
   // A-01: peça fora do domínio de consolo não vira laudo.
-  const podeSalvar = estado?.ok && !estado.resultado.foraDeEscopo;
+  // E só se salva o que foi calculado — daí o `!sujo`.
+  const podeSalvar = estado?.ok && !estado.resultado.foraDeEscopo && !sujo;
 
   return (
     <div className="space-y-4">
-      <form id="consolo" action={acaoCalcular} className="space-y-4">
+      <form
+        id="consolo"
+        action={acaoCalcular}
+        onInput={aoMudar}
+        onChange={aoMudar}
+        className="space-y-4"
+      >
         <AvisoModo modo={modo} />
 
         <Card>
@@ -307,6 +318,8 @@ export function FormConsolo({
             {erro}
           </p>
         )}
+
+        {estado?.ok && sujo && <AvisoRecalcular />}
 
         <div className="flex flex-wrap gap-2">
           <SubmitButton>

@@ -21,6 +21,8 @@ import {
   CamposLaudo,
   type ModoFormulario,
 } from "@/components/campos-laudo";
+import { useFormSujo } from "@/components/form-sujo";
+import { AvisoRecalcular } from "@/components/aviso-recalcular";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -90,9 +92,18 @@ export function FormGranulometria({
     ? (estado.idCliente ?? null)
     : (idClienteInicial ?? null);
 
+  // Só se salva o que foi calculado: mexer num campo esconde o Salvar.
+  const { sujo, aoMudar } = useFormSujo(estado);
+
   return (
     <div className="space-y-4">
-      <form id="granul" action={acaoCalcular} className="space-y-4">
+      <form
+        id="granul"
+        action={acaoCalcular}
+        onInput={aoMudar}
+        onChange={aoMudar}
+        className="space-y-4"
+      >
         <AvisoModo modo={modo} />
 
         <Card>
@@ -266,12 +277,14 @@ export function FormGranulometria({
           </p>
         )}
 
+        {estado?.ok && sujo && <AvisoRecalcular />}
+
         <div className="flex flex-wrap gap-2">
           <SubmitButton>
             <Calculator className="h-4 w-4" />
             Calcular
           </SubmitButton>
-          {estado?.ok && (
+          {estado?.ok && !sujo && (
             <SubmitButton formAction={acaoSalvar} variant="outline">
               <Save className="h-4 w-4" />
               {modo.tipo === "editar" ? "Salvar alterações" : "Salvar análise"}
